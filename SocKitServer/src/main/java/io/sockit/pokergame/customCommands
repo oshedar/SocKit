@@ -1,0 +1,6 @@
+
+custom errors
+1 bet Value Too Less  - data jsonobject - desc, minBet, actualBet
+2 Chips too less to take seat - data jsonobject - desc, minChips, actualChips
+3 not enough chips in Hand - data jsonobject - desc, chipsInHand, chipsRequired
+

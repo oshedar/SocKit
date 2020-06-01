@@ -1,0 +1,52 @@
+make bot smarter
+on time out default should be check or fold - done
+if player is allin dont allow him to fold - done
+dont show folded user's hand and if everyone folded dont display winning hand - done
+
+don't send/display other's hand except on game over - done
+winner's hand not displaying correctly
+add pot to winner's chips - done
+option to fold anytime - done but check client 
+rename call to check if call value is zero - check client
+if remaining players are all all in then end game - done but check client
+
+option to check who won the previous hand, and see the LOG of the previous hand 
+
+
+
+in sitngoroom in donextTurn increase the nextTurnDelay
+
+in bot reset delay on next move
+
+
+
+
+on seat left if curplayer left then next turn should be called
+
+create pot
+add chips to user and chips to player - player chips is also known as chips on table 
+there should also be chipsInPot
+
+what happens if player is allIn but leaves seat
+what happens if player folds out of turn
+
+isRoundComplete
+player status - folded/left seat, called, raised, allIn
+betting rounds - preFlop, flop,turn,river
+
+totAmtInPot will tell which pot player is in
+how can I tell if round is complete - if all players in pot are equal or folded
+
+should on startGame be allowed to cancel game start?
+delayed startGame - what if somebody left seat?
+should delayed startGame be there atall ?
+
+
+in delayedNextTurn and other delayed commands store gameNo to indicate if it is for same game or another game - if its for another game then ignore
+gameaction rename to sendGameAction
+what should be the data for gameAction command - should whole room be sent - yes send 
+
+
+should turnPlayed be sent if player action is out of turn - yes
+
+check out turnTimeOut whether curTurnSeatNo is set to 0 or not

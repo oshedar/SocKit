@@ -1,0 +1,233 @@
+**/pokergame/,**/tictactoe/,**/*.doc,**/*.txt
+
+in game client make ClientCommandDataSocket similar to javascript as 
+
+automatically startGame in endGame instead of doing it in afterGameStart - done
+
+make userId random String - done
+why does room have comparable
+why does room have comparator
+make roomId random String
+
+create a sessionMap with UserId also - 
+remove activeUsers instead use sessions
+
+retrieve user with sessionId instead of userId - done
+in Session.close remove session from sessionsMap - done
+
+in user methods loginWithGoogle , loginWithEmail, etc remove staticLock
+use single db for data.
+remove Auto increase room - instead let admin do it - done
+
+2 types of sessionTimeOutDelay seated delay and not seated delay
+
+
+
+
+
+use System.currentTimeMillis instead of System.nanoTime - done
+
+add userdata to players - done
+avoid recreating player jsonobject in room.toJson for each player again and again when data not same for players - done
+if firsttime login give bonus chips - done
+
+recode dataCache to use concurrentHashMap - done
+insteadof currentimemillis() use nanotime - done
+combine other ids like facebook,gmail, etc into 1 - done
+in rooms use concurrentHashMap - done
+add no of tcp sockets to selector - done
+
+add server port binding error handling to async socket
+add unable to connect to clientlistener instead of messagesentfailed() as everything is asynchronous
+new server which uses websockets - done
+new client which uses websockets - done
+optimize json and send mesg use String builders - done
+
+
+should playersInGame be cleared before endGameMesg is sent or after end game mesg is sent 
+should gameInProgress be modified after endGameMesg is sent or before - do it after
+
+in client indicate when trying to connect and when connection successfull and failure
+done - in login use same session if already exists
+done - in shutDown save private rooms
+done - when room is destroyed make session.room null for players and spectators 
+done - in destroy make sendMesg room is being destroyed, reset player data or whatever
+done - in session check if sessionClosed is tested in all methods
+done - in leave room make session.room null
+done - check if destroyed is checked in all room methods
+done - make fields in constructor visible to other threads by calling them in lock
+done - in constructor dont add instance to list
+done - what if a player accepts invitation to private room after room does not exist - send room does not exist mesg
+done - unused methods in room get botCount
+done - remember to call user.modified in close session and other methods like startGame, endGame, etc, take seat, session close, etc
+
+to startGame you have to call startGame
+to play turn u have to call nextTurn
+when client plays turn onTurnPlayed is called
+when turn is Played or times out - you have to call turnPlayed
+if player plays out of turn you have to call outOfTurnPlayed
+to endGame you have to call endGame
+if player is Leaving room set left mesg is not sent to that player
+
+if player leaves seat should turnPlayed or outOfTurnPlayed mesg be sent? - 
+        no as room will be updated by seatLeft mesg at client 
+        but you should call next turn in afterSeatLeft if  it is turnPlayer
+        if only 1 player left then do game over for both turnPlayer and outOfTurnPlayer
+
+should there be a field or method to check if game should be started or not? no need 
+    if we are manually starting the game then we can ourselves check
+
+
+
+
+on seat left no need to send turnplayed as after seat left just send next turn
+
+
+dont autostart game - when implementor wants to start then he will start
+
+have first turn delay - no need can do so in on startup
+let turn be automatic but allow turn to be delayed, also allow setting duration of nextTurn
+allow turn to be ended
+
+let other command be sent such as turn card
+should next turn be automatic 
+room will have curTurnPlayer
+nextTurn turn time out 
+
+should newgame and first turn be different? - cons resending same data twice - pros - delay between new game and first turn
+should next turn be auto- what about extra info like turn card etc. actions like turn card dont have player involved. which should do next turn after a delay
+
+in poll in nonsessioncommandlistener if room is joined remember to send room joined or room data
+reset clientdata on login in gameserver.client also if already logged in first logout 
+player needs to store lastAction
+who is curPlayer
+timeRemaining
+
+static lock shouldnt call instance locks
+Roomfactory shouldlnt use location locks
+location shouldnt use room locks
+User shouldnt use session locks
+session shouldnt use room locks
+
+datacache shouldnt use user locks
+data shouldnt use datacache and user locks
+
+Room.toShortJson - use lock only when calling addDataForRoomList - because otherwise u dont need it
+Room.toJson -  dont use lock as it will be called from a room lock as it is
+What about custom commands - how do we ensure locking for variables that are added - only way is to force it in code just to make sure
+what about other methods like getPlayerCount- should they be locked or not - as of now not required but what if
+
+
+join room always have - after room joined
+take seat - before take seat and after take seat - //auto increase will be here
+leave seat - after leave seat
+leave room - auto Remove will be here
+
+
+
+should player be allowed to takeSeat before joining room? -yes - especially if you want invitation to a particular seat - 
+    will it create problem for bots - so bots should not try it
+if player takes seat directly - should join room be called first then take seat or take seat directly
+
+
+
+
+in client sendMesg - if new socket is created and client is loggedIn and mesg is not register or login then remember to send poll first
+
+other modes of authentication like - only facebook 
+
+use only userId to identify users  - if userId is used others can hijack other users session - 
+polling is hidden from clients - only through predefined library - so programmer does not know about it
+
+combine facebook and registered email - no dont - can be done later via user Id and separate command from login
+
+if session exists and user logs in then user will be sent duplicate session - not if user is same
+
+should there be sessionId - when user reconnects how do I know if it is same machine or another machine - 
+    - if poll is sent then its same session else new session - for security reasons maybe
+
+how does client know session has started or ended - when client logs in session starts
+    - y does client need to know - if he send a poll command we can simply say session ended if it does not exist - we can always encrypt
+
+on shutdown - 
+ all rooms must be shutdown
+
+how does client know that its mesg reached the server - if write returns true then its mesg reached the server - keep it simple
+
+should rooms be tournament rooms - if so how - no
+
+
+
+active users dont add to cache
+should inactivated users be added to cache- yes - if they are not there in the cache - if they are there then dont add
+#map is 1000 times faster than treemap - especially when capacity is set at the begining
+use hashmap instead of treemap - set hashmap load factor to 100% 1.0f when hashmap capacity is set in the beginiing
+leveldb itself uses locking and 2 threads cant read or write at the same time
+same object should not be read twice from db else problem will happen - whole architecture will go down
+so get user Will always come through a lock - so should there be multiple locks - no if not necessary
+
+should a user have multiple sessions
+- problems - if user reconnects - both sessions will be on 
+
+generate sessionId
+if new socket sessionId is same then just set new socket for session and continue
+if new socket sessionId is not there then end previousSession and start new session - send duplicate login error
+
+endsession - if user.session is same as session being ended then deactivate user
+
+idle session timeout
+
+since gameExtendsRoom 
+location will have games
+
+
+noofnonbot players and visitors
+
+find rooms by master
+sort rooms by some criteria
+
+
+game can have location which will have rooms
+location will have games which will have rooms
+rooms can be auto created
+
+user will have currency
+should each game have currency?
+
+
+
+dont have separate game class - just room class which is extended with methods that are overridden
+
+
+game factory to create game rooms 
+
+rooms can have autobots
+
+how to know whether command is to be processed by game
+have a prefix - unknown 
+
+game commands are different
+separate room and game
+game can be started
+
+room will have spectators and players
+room will have  flag to indicate tournament or not and whether tournament started or ended
+
+quick game is not there
+
+location getRooms
+
+
+room - takeSeat, leaveSeat, startGame, endGame,nextTurn,sendMesgToSpectators, sendMesgToPlayers
+
+create Game
+add locations
+
+
+
+game - roomEvents, leavingSeat,seatLeft,leavingRoom, roomLeft, 
+  startGame,  endGame
+
+gameCommand
+
+fast and slow games

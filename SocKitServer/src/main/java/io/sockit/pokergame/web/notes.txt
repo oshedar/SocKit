@@ -1,0 +1,12 @@
+https://css-tricks.com/resolution-specific-stylesheets/
+
+
+redesign poller to be a separate object
+stop poller in connectionDisconnected and connectionClosed
+
+
+display error in popover when chips in hand is less than minchips to take seat
+make popover raneInput fix size in percentage - it keeps resizing and causes flicker every time span content changes
+dont add click event to whole player element provide an element for empty seat to add click event
+
+

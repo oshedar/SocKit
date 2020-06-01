@@ -1,0 +1,192 @@
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+.hidden {
+	display: none !important;
+}
+.link {
+	cursor: pointer;
+}
+ul {
+	list-style-position: inside;
+	list-style-type: none;
+}
+
+h1, h2 {
+	font-weight: 800;
+	color: grey;
+	margin-bottom: 20px;
+	font-size: 30px;
+}
+h1 {
+	margin-top: 10vmin;
+}
+h2 {
+	font-size: 20px;
+	color: #9c9c9c;
+}
+#backButton {
+	position: absolute;
+	left: 1em;
+	top: 1em;
+	font-size: 4vmin;
+}
+#rooms {
+	width: 80%;
+	min-height: 40vh;
+}
+#rooms ul li {
+	cursor: pointer;
+	background: #f5f5f5;
+	border-radius: 10px;
+	padding: 2vw;
+}
+#game {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	margin-bottom: 80px;
+}
+#game #grid {
+	width: 45vmin;
+	height: 45vmin;
+	/*max-height: 700px;
+	max-width: 700px;*/
+	/*background: #f5f5f5;*/
+	display: flex;
+	flex-wrap: wrap;
+}
+#game #grid li {
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	width: 15vmin;
+	height: 15vmin;
+	border-right: 5px solid #cccccc;
+	border-bottom: 5px solid #cccccc;
+	
+	font-size: 10vmin;
+	text-align: center;
+	color: #cccccc;
+
+}
+#game #grid.active li {
+	border-right: 5px solid #909090;
+	border-bottom: 5px solid #909090;
+	color: black;
+}
+#game #grid li.highlight {
+	color: black;
+	background-color: #dcedfd;
+}
+#game #grid li:nth-child(3), #game #grid li:nth-child(6), #game #grid li:nth-child(9){
+	border-right: none !important;
+}
+#game #grid li:nth-child(7), #game #grid li:nth-child(8), #game #grid li:nth-child(9){
+	border-bottom: none !important;
+}
+
+#game nav {
+	width: 80%;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	margin: 20px 0;
+	flex-wrap: wrap;
+}
+#game nav div {
+	background: #f5f5f5;
+	border-radius: 10px;
+	margin-right: 5%;
+	margin-bottom: 12%;
+	padding: 1vmin;
+	/*overflow-x: hidden;*/
+	position: relative;
+	
+	/*Center Align and Stack*/
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: nowrap;
+}
+#game nav div.active {
+	background-color: #787878;
+}
+#game nav div h2 {
+	margin: 0;
+}
+#game nav div.active h2 {
+	color: white;
+}
+#game nav div.inactive h2 {
+	color: #d6d6d6;
+}
+#game nav div h2 b {
+	display: inline-block;
+	width: 3vmin;
+	text-align: center;
+	background: #9a9a9a;
+	border-radius: 2px;
+	/*block;*/
+	font-size: 4vmin;
+	margin-right: 1vmin;
+	padding: 0;
+	color: white;
+}
+#game nav div.active h2 b {
+	color: white;
+}
+#game nav div.inactive h2 b{
+	background: #dddddd;
+}
+#game nav div .turnTimer{
+	position: absolute;
+	bottom: -28px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 100%;
+	margin: 0 auto;
+}
+#game #result {
+	position: absolute;
+	background: #e3e3e3;
+	border-radius: 10px;
+	
+	text-align: center;
+	
+	bottom: 55%;
+	left: 37%;
+	width: 25%;
+	border: 1px solid #c7c7c7;
+}
+#game #result h2 {
+	margin-top: 5%;
+}

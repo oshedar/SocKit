@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>TicTacToe</title>
+<script src="SocKitClient.min.js?v=1.1" type="text/javascript"></script>
+<script src="TicTacToe.js" type="text/javascript"></script>
+<link rel="stylesheet" href="styles.css" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+
+<body>
+    <h1>TicTacToe</h1>
+    <section id="login" class="">
+		
+		<input type="email" name="email" value="" placeholder="Enter your email ID" />
+		<input id="loginButton" type="submit" name="login" value="Login" />
+	</section>
+	
+	<section id="rooms" class="hidden">
+		<h2>Choose A Room</h2>
+		<ul>
+			<li></li>
+		</ul>
+	</section>
+	
+	<section id="game" class="hidden">
+		<nav id="players">
+			<div class="active"><h2><b>X</b><em>Choose Token</em></h2>
+				<p class="turnTimer hidden">60s left...</p>
+			</div>
+			
+			<div class="inactive"><h2><b>O</b><em>Choose Token</em></h2>
+				<p class="turnTimer hidden">60s left...</p>
+			</div>
+		</nav>
+		<ul id="grid" class="">
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+			<li></li>
+		</ul>
+		<div id="result" class="">
+			<h2>Waiting for players...</h2>
+		</div>
+	</section>
+	
+	<button id="backButton" class="hidden">
+		&lt;Back
+	</button>
+</body>
+
+</html>

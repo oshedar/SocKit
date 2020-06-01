@@ -1,0 +1,24 @@
+how to add a resource folder to a maven project
+ 1. Right click the project node, choose New > Folder.
+ 2. Name the folder resources and  choose parent folder as src/main (note for test resources choose src/test).
+ 3. Click finish
+
+
+http://www.gabrielgambetta.com/fpm1.html
+http://gamasutra.com/blogs/TramelMorrison/20140307/212607/Android_Realtime_Multiplayer__Latency_and_Anxiety.php
+
+timeout connection in client
+comment out debug log
+
+make all fields volatile as they will be accessed from multiple threads
+or else see to it that they are called from a synchronized block
+
+if a variable is only accessed from a synchronized block on the same monitor - it does not need to be declared 
+  volatile else it should be declared volatile to ensure memory consistency
+
+Server with start and stop method
+register listener
+
+listener's run method called in a separate thread
+ 
+
