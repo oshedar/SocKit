@@ -6,11 +6,14 @@
 package io.sockit.pokergame;
 
 import io.sockit.servertools.BasicWebHandler;
+import io.sockit.servertools.Console;
 import io.sockit.sockitserver.Server;
 import io.sockit.sockitserver.LevelDbStore;
 import io.sockit.sockitserver.WebAnalyticsFilter;
 import io.sockit.sockitserver.bot.BotTurnDelayType;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 //import org.apache.commons.daemon.Daemon;
 //import org.apache.commons.daemon.DaemonContext;
 //import org.apache.commons.daemon.DaemonInitException;
@@ -22,17 +25,19 @@ import java.io.File;
 public class Main { //implements Daemon{
     
     public static void main(String[] args) throws Exception{
+//        System.out.println(new File("../..").getCanonicalPath());
+//        if(1==1) return;
         String dbPath=getArgValue(args, "-dbPath");
         if(dbPath==null)
-            dbPath="../gameDb";
+            dbPath="../../gameDb";
 
         String logFile=getArgValue(args, "-logFile");
         if(logFile==null)
-            logFile="../serverLog.txt";
+            logFile="../../serverLog.txt";
         
         String webPath=getArgValue(args, "-webPath");
         if(webPath==null)
-            webPath="../GameWebClient/public_html";
+            webPath="/home/hoshi/sites/sockit/GameWebClient/public_html";//webPath="../GameWebClient/public_html";
 
         File webRootFolder=new File(webPath);
         
@@ -48,28 +53,61 @@ public class Main { //implements Daemon{
         
         String pfxFile=getArgValue(args, "-pfxFile");
         String pfxPswd=getArgValue(args, "-pfxPswd");
-        String pvtKeyAlias=getArgValue(args, "-pvtKeyAlias");
-        
-        Main main=new Main();
-        main.startServer(dbPath, webRootFolder, logFile,port,pfxFile,pfxPswd,pvtKeyAlias);
+        String domainName=getArgValue(args, "-domainName");
+        if(pfxFile==null){
+            port=8443;
+            pfxFile="/home/hoshi/sites/sockit/keys/sockit.pfx";
+            pfxPswd="test@123";
+            domainName="*";
+        }
+        addSite(domainName, webRootFolder, pfxFile, pfxPswd, null);
+        addSite("funwithcode.in", new File("/home/hoshi/sites/funwithcode/webroot"), "/home/hoshi/sites/funwithcode/key.pfx", "fun@123", null);
+        Main.startServer(dbPath, logFile,port);
     }
     
-    private void startServer(String dbPath,File webPath,String logFile,int port,String pfxFile,String pfxPswd,String pvtKeyAlias) throws Exception{
+    private static class SiteConfig{
+        String domainName;
+        File webPath;
+        String pfxFile;
+        String pfxPswd;
+        String pvtKeyAlias;
+
+        public SiteConfig(String domainName, File webPath, String pfxFile, String pfxPswd, String pvtKeyAlias) {
+            this.domainName = domainName;
+            this.webPath = webPath;
+            this.pfxFile = pfxFile;
+            this.pfxPswd = pfxPswd;
+            this.pvtKeyAlias = pvtKeyAlias;
+        }
+        
+    }
+    private static List<SiteConfig> sites=new ArrayList(2);
+
+    private static void addSite(String domainName, File webPath, String pfxFile, String pfxPswd, String pvtKeyAlias){
+        sites.add(new SiteConfig(domainName, webPath, pfxFile, pfxPswd, pvtKeyAlias));
+    }
+    
+    private static void startServer(String dbPath,String logFile,int port) throws Exception{
         Server.registerGame(new PokerGame(20,BotTurnDelayType.fast,8));
-        if(pfxFile!=null)
-            Server.setSslCertificate(new File(pfxFile), pfxPswd, pvtKeyAlias);
         Server.setInitialUsersCacheSize(2000);
         Server.setDataStore(new LevelDbStore(dbPath));
         Server.setCombineLoginWithRegisterUser(true);
         if(logFile!=null)
             Server.setLogFile(logFile);
-        Server.addWebHandler(".*",new BasicWebHandler(webPath));
-        Server.addWebFilter(".*", new WebAnalyticsFilter());
-        if(pfxFile!=null)
+        Server.addWebFilter("*",".*", new WebAnalyticsFilter());
+        boolean isSsl=false;
+        for(SiteConfig site:sites){
+            if(site.pfxFile!=null){
+                Server.addSslCertificate(site.domainName,new File(site.pfxFile), site.pfxPswd, site.pvtKeyAlias);
+                isSsl=true;
+            }
+            Server.addWebHandler(site.domainName,".*",new BasicWebHandler(site.webPath));
+        }
+        if(isSsl)
             Server.startServerAsHttps(port, true);
         else
             Server.startServerAsHttp(port);
-        Server.logToConsole("Server started on ports: 80, 443");
+        Server.logToConsole("Server started on port: " + port);
         Server.logToConsole("Press Q + Enter to Quit");
         int charRead;
         while(true){
@@ -100,7 +138,7 @@ public class Main { //implements Daemon{
 //        String dbPath="../gamedb";
 //        String logFile="../serverLog.txt";
 //        String webPath="C:/projects/GameWebClient/public_html";
-//        this.startServer(dbPath, webPath, logFile);
+//        Main.startServer(dbPath, webPath, logFile);
 //    }
 //
 //    @Override

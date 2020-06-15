@@ -33,6 +33,18 @@ public interface WebRequest {
     String getHostName();
 
     /**
+     * Returns the host port in the request url. For e.g for url http://sockit.io:8443/docs/index.html the port is 8443
+     * @return int - The host port in the request url
+     */
+    int getHostPort();
+
+    /**
+     * Returns whether request is over https. 
+     * @return boolean - returns true if request is over https else false
+     */
+    boolean isHttps();
+
+    /**
      * Returns the resource path of the web request excluding the query string. For e.g for url http://sockit.io/docs/index.html?user=hoshi the resourcePath will be /docs/index.html
      * @return String - The resource path of the web request excluding the query string. For e.g for url http://sockit.io/docs/index.html?user=hoshi the resourcePath will be /docs/index.html
      */

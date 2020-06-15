@@ -91,7 +91,7 @@ public class FileLogger implements Logger, Runnable{
     }
     
     @Override
-    public synchronized void run() {
+    public void run() {
         OutputStream os=null;
         try{
             if(logs.isEmpty())
@@ -114,14 +114,18 @@ public class FileLogger implements Logger, Runnable{
             Console.log(ex);
         }
         finally{
-            if(os!=null){
-                try{os.close();}catch(Exception ex){}
-            }
-            if(!logs.isEmpty() && !destroyed.get()){
-                Executor.executeWait(qProcessor,waitTimeMillis);                
-            }
-            else 
+            try{
+                if(os!=null){
+                    try{os.close();}catch(Exception ex){}
+                }
+                if(!logs.isEmpty() && !destroyed.get()){
+                    Executor.executeWait(qProcessor,waitTimeMillis);                
+                }
+                else 
+                    runnableStarted.set(false);
+            }catch(Exception ex){
                 runnableStarted.set(false);
+            }
         }
     }
     

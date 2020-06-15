@@ -43,7 +43,7 @@ public class TestServer extends ClientEventAdapter {
         Server.registerGame(new TicTacToeGame());
         Server.setInitialUsersCacheSize(2000);
         Server.setCombineLoginWithRegisterUser(true);
-        Server.addWebHandler(".*",new BasicWebHandler(webRootFolder));
+        Server.addWebHandler("*",".*",new BasicWebHandler(webRootFolder));
         Server.startServerAsHttp(0);
     }
     

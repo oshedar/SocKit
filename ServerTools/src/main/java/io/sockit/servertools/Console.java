@@ -6,6 +6,7 @@
 package io.sockit.servertools;
 
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
@@ -21,7 +22,7 @@ public class Console {
     private final static AtomicBoolean runnableStarted=new AtomicBoolean(false);
     private final static Runnable qProcessor=Executor.newWaitRunnable(new QProcessor());
     final static int waitTimeMillis=4;
-    static final Charset utf_8=Charset.forName("UTF-8");
+//    static final Charset utf_8=Charset.forName("UTF-8");
     private static final byte[] newLine="\r\n".getBytes(Charset.forName("UTF-8"));
 
     
@@ -48,13 +49,12 @@ public class Console {
 
     private static class QProcessor implements Runnable{
         @Override
-        public synchronized void run() {
-            OutputStream os=System.out;
+        public void run() {
             try{
+                PrintStream os=System.out;
                 String mesg;
                 while((mesg=logs.poll())!=null){
-                    os.write(mesg.getBytes(utf_8));
-                    os.write(newLine);
+                    os.println(mesg);
                 }
             }catch(Exception ex){
                 ex.printStackTrace();

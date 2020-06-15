@@ -18,13 +18,17 @@ class BasicWebRequest implements WebRequest{
     final String hostName;
     final String resourcePath;
     final String queryString;
+    final int port;
+    final boolean https;
 
-    public BasicWebRequest(SocketAddress remoteAddress, List<HttpHeader> requestHeaders, String hostName, String resourcePath, String queryString) {
+    public BasicWebRequest(SocketAddress remoteAddress, List<HttpHeader> requestHeaders, String hostName, String resourcePath, String queryString,int port,boolean isHttps) {
         this.remoteAddress = remoteAddress;
         this.requestHeaders = requestHeaders;
         this.hostName = hostName;
         this.resourcePath = resourcePath;
         this.queryString = queryString;
+        this.port=port;
+        this.https=isHttps;
     }
 
     @Override
@@ -40,6 +44,16 @@ class BasicWebRequest implements WebRequest{
     @Override
     public String getHostName() {
         return hostName;
+    }
+
+    @Override
+    public int getHostPort() {
+        return port;
+    }
+
+    @Override
+    public boolean isHttps() {
+        return https;
     }
 
     @Override

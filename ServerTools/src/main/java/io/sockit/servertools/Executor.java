@@ -67,6 +67,8 @@ public class Executor {
     }
     
     public static WaitRunnable newWaitRunnable(Runnable runnable){
+        if(threadPoolExecutor==null)
+            Executor.init("te", Runtime.getRuntime().availableProcessors()*2, Runtime.getRuntime().availableProcessors()*20);
         return new WaitRunnable(threadPoolExecutor,runnable);
     }
     

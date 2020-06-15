@@ -26,16 +26,20 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedNioFile;
 import io.netty.handler.stream.ChunkedStream;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.DomainNameMapping;
+import io.netty.util.DomainNameMappingBuilder;
 import io.netty.util.ResourceLeakDetector;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -54,7 +58,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Pattern;
 
@@ -85,7 +91,7 @@ public class WebSocketServer {
         }
     }    
     
-    private static final NavigableSet<UrlHandler> handlers=new ConcurrentSkipListSet();
+    private static final Map<String,NavigableSet<UrlHandler>> handlersMap=new ConcurrentSkipListMap(String.CASE_INSENSITIVE_ORDER); //new ConcurrentSkipListSet();
     
     private static class FilterHandler{
         String urlPattern;
@@ -100,7 +106,9 @@ public class WebSocketServer {
         
     }
     
-    private static final Collection<FilterHandler> filters=new ConcurrentLinkedQueue();
+    private static final Collection<FilterHandler> globalFilters=new ConcurrentLinkedQueue();
+    
+    private static final Map<String,Collection<FilterHandler>> filtersMap=new ConcurrentSkipListMap(String.CASE_INSENSITIVE_ORDER);
     
     public static void startAsHttp(int httpPort,SocketConnectionListener connectionListener) {     
         if(httpPort<1)
@@ -111,7 +119,16 @@ public class WebSocketServer {
     public static void startAsHttps(int httpsPort, SocketConnectionListener connectionListener,boolean enableHttpRedirect) {
         if(httpsPort<1)
             throw new IllegalArgumentException("invalid httpsPort " + httpsPort);
-        start(enableHttpRedirect?80:-1, httpsPort, connectionListener);
+        int httpPort=-1;
+        if(enableHttpRedirect){
+            if(httpsPort<1000){
+                httpPort=80;
+            }
+            else{
+                httpPort=(httpsPort/1000)*1000+80;
+            }
+        }
+        start(httpPort, httpsPort, connectionListener);
     }
     
     private static void start(int httpPort, int httpsPort, SocketConnectionListener connectionListener) {
@@ -133,12 +150,12 @@ public class WebSocketServer {
                     ChannelPipeline pipeline = socketChannel.pipeline();
                     int localPort=socketChannel.localAddress().getPort();
                     if(localPort==httpsPort)
-                        pipeline.addLast(sslContext.newHandler(socketChannel.alloc()));
+                        pipeline.addLast(new SniHandler(domainNameMappingBuilder.build()));//pipeline.addLast(sslContext.newHandler(socketChannel.alloc()));//
                     boolean addWebSocket=httpsPort<1 || (localPort==httpsPort);
                     pipeline.addLast(new HttpServerCodec());
                     pipeline.addLast(new ChunkedWriteHandler());
                     pipeline.addLast(new HttpObjectAggregator(16*1024));
-                    pipeline.addLast(new HttpRequestHandler(!addWebSocket));
+                    pipeline.addLast(new HttpRequestHandler(!addWebSocket,localPort==httpsPort,localPort));
                     if(addWebSocket){
                         pipeline.addLast(new WebSocketServerProtocolHandler("/"));
                         pipeline.addLast(new BinaryWebSocketFrameHandler());
@@ -208,19 +225,32 @@ public class WebSocketServer {
     
     /**
      * Registers a WebHandler for processing a web request matching the specified urlPattern 
+     * @param domainName - the domain name for which this web handler will be invoked. If value is "*" then it will be invoked for any domain if a matching handler is not available for the domain
      * @param urlPattern - the url pattern for which this web handler will be invoked
      * @param webHandler - the WebHandler that will be invoked when a request matching the url pattern is received by the Server
      */
-    public static void addWebHandler(String urlPattern, WebHandler webHandler){
+    public static void addWebHandler(String domainName,String urlPattern, WebHandler webHandler){        
+        if(domainName==null)
+            throw new NullPointerException("hostName cannot be null");
+        NavigableSet<UrlHandler> handlers=handlersMap.get(domainName);
+        if(handlers==null){
+            handlers=new ConcurrentSkipListSet();
+            handlersMap.put(domainName, handlers);
+        }
+        handlers=handlersMap.get(domainName);
         handlers.add(new UrlHandler(urlPattern, webHandler));        
     }
     
     /**
      * Deregisters a WebHandler on the server
+     * @param domainName - the domain name for which this web handler will be removed. 
      * @param urlPattern - the url pattern for which this web handler will be removed
      * @return WebHandler - the webHandler that was deRegistered or null if none was registered for the specified urlPattern
      */
-    public static WebHandler removeWebHandler(String urlPattern){
+    public static WebHandler removeWebHandler(String domainName,String urlPattern){
+        NavigableSet<UrlHandler> handlers=handlersMap.get(domainName);
+        if(handlers==null)
+            return null;
         Iterator<UrlHandler> iterator=handlers.iterator();
         UrlHandler handler;
         while(iterator.hasNext()){
@@ -235,10 +265,34 @@ public class WebSocketServer {
 
     /**
      * Registers a WebFilter with the server
+     * @param domainName - the domain name for which this web filter will be added. If value is "*" then it will be used for all domains
      * @param urlPattern - the url pattern for which this web filter will be invoked
      * @param webFilter - the WebFilter that will be invoked when a request matching the url pattern is received by the Server
      */
-    public static void addWebFilter(String urlPattern, WebFilter webFilter){
+    public static void addWebFilter(String domainName,String urlPattern, WebFilter webFilter){
+        FilterHandler filterHandler;
+        Collection<FilterHandler> filters;
+        //if hostName is * add to globalFilters and all other filters and return        
+        if(domainName.equals("*")){
+            filterHandler=new FilterHandler(urlPattern, webFilter);
+            globalFilters.add(filterHandler);
+            Set<String> domains=filtersMap.keySet();
+            for(String domain:domains){
+                filters=filtersMap.get(domain);
+                if(filters!=null)
+                    filters.add(filterHandler);
+            }
+            return;
+        }
+        
+        //if hostName is not * the get filters collection for host
+        filters=filtersMap.get(domainName);//new ConcurrentLinkedQueue();
+        // if null then create filters collection and add all the filters in global filters collection 
+        if(filters==null){
+            filters=new ConcurrentLinkedQueue(globalFilters);
+            filtersMap.put(domainName, filters);
+        }
+        // add filter to the host's filter collection
         filters.add(new FilterHandler(urlPattern, webFilter));
     }
     
@@ -260,6 +314,7 @@ public class WebSocketServer {
     
     static class BinaryWebSocketFrameHandler extends SimpleChannelInboundHandler<BinaryWebSocketFrame> {
         private volatile RemoteCommandDataSocket remoteCommandDataSocket;
+
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
             if (evt == WebSocketServerProtocolHandler.ServerHandshakeStateEvent.HANDSHAKE_COMPLETE) {
@@ -294,50 +349,81 @@ public class WebSocketServer {
     }
     
     static class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-       private final boolean redirectToHttps;
+        private final boolean redirectToHttps;
+        private final boolean https;
+        private final int port;
+        public HttpRequestHandler(boolean redirectToHttps,boolean isHttps,int port) {
+            this.redirectToHttps= redirectToHttps;
+            this.https=isHttps;
+            this.port=port;
+        }
 
-       public HttpRequestHandler(boolean redirectToHttps) {
-           this.redirectToHttps=redirectToHttps;
-       }
-
-       @Override
-       public void channelRead0(ChannelHandlerContext ctx,FullHttpRequest request) throws Exception {           
-           String hostName=request.headers().get("Host");               
-           if(redirectToHttps){               
-               String redirectUri="";
-               redirectUri="https://" + hostName + (httpsPort==443?"":":"+httpsPort) + request.uri();
-               HttpResponse response=new DefaultFullHttpResponse(request.getProtocolVersion(),HttpResponseStatus.TEMPORARY_REDIRECT);
-               response.headers().set(HttpHeaders.Names.LOCATION,redirectUri);
-                ctx.write(response);
-                ChannelFuture future = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-                future.addListener(ChannelFutureListener.CLOSE);
-                return;
-           }
-           String upgradeHeader=request.headers().get("Upgrade");
-           if (upgradeHeader!=null && upgradeHeader.equals("websocket")) {
-               ctx.fireChannelRead(request.retain());
-           } else {
-               Executor.execute(new HttpRequestProcessor(ctx, request,hostName));
-           }
-       }
+        @Override
+        public void channelRead0(ChannelHandlerContext ctx,FullHttpRequest request) throws Exception {           
+            String host=request.headers().get("Host");
+            String hostName;
+            int index=host.indexOf(':');
+            if(index<0){
+                hostName=host;
+            }
+            else {
+                hostName=host.substring(0, index);
+            }
+            if(redirectToHttps){               
+                String redirectUri;
+                redirectUri="https://" + hostName + (httpsPort==443?"":":"+httpsPort) + request.uri();
+                HttpResponse response=new DefaultFullHttpResponse(request.getProtocolVersion(),HttpResponseStatus.TEMPORARY_REDIRECT);
+                response.headers().set(HttpHeaders.Names.LOCATION,redirectUri);
+                 ctx.write(response);
+                 ChannelFuture future = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+                 future.addListener(ChannelFutureListener.CLOSE);
+                 return;
+            }
+            String upgradeHeader=request.headers().get("Upgrade");
+            if (upgradeHeader!=null && upgradeHeader.equals("websocket")) {
+                ctx.fireChannelRead(request.retain());
+            } else {
+                Executor.execute(new HttpRequestProcessor(ctx, request,hostName,this.port,this.https));
+            }
+        }
        
-       private static WebHandler getWebHandler(String webPath){
-           for(UrlHandler handler:handlers){
-               if(handler.pattern.matcher(webPath).matches())
-                   return handler.webHandler;
-           }
-           return null;
-       }
+        private static WebHandler getWebHandler(String hostName,String webPath){            
+            NavigableSet<UrlHandler> handlers=handlersMap.get(hostName);
+            if(handlers==null){                
+                handlers=handlersMap.get("*");
+                hostName="*";
+            }
+            if(handlers==null)
+                return null;
+            for(UrlHandler handler:handlers){
+                if(handler.pattern.matcher(webPath).matches())
+                    return handler.webHandler;
+            }
+            if(hostName.equals("*"))
+                return null;
+            handlers=handlersMap.get("*");
+            if(handlers==null)
+                return null;
+            for(UrlHandler handler:handlers){
+                if(handler.pattern.matcher(webPath).matches())
+                    return handler.webHandler;
+            }
+            return null;
+        }
        
        private static class HttpRequestProcessor implements Runnable{
            private final ChannelHandlerContext ctx;
            private final FullHttpRequest request;
            private final String hostName;
+           private final int port;
+           private boolean https;
 
-            public HttpRequestProcessor(ChannelHandlerContext ctx, FullHttpRequest request, String hostName) {
+            public HttpRequestProcessor(ChannelHandlerContext ctx, FullHttpRequest request, String hostName,int port,boolean isHttps) {
                 this.ctx = ctx;
                 this.request = request;
                 this.hostName=hostName;
+                this.port=port;
+                this.https=isHttps;
             }
 
             @Override
@@ -354,7 +440,11 @@ public class WebSocketServer {
                         webPath=uri.substring(0, index);
                         queryString=uri.substring(index+1);
                     }
-                    WebHandler webHandler=getWebHandler(uri);
+                    WebHandler webHandler=getWebHandler(hostName,uri);
+                    Collection<FilterHandler> filters=filtersMap.get(hostName);
+                    if(filters==null){
+                        filters=globalFilters;
+                    }
                     //create filter chain
                     WebFilterChain chain=new WebFilterChain();
                     for(FilterHandler filterHandler:filters){
@@ -376,7 +466,7 @@ public class WebSocketServer {
                         for(Map.Entry<String,String> entry:reqHeaders)
                             requestHeaders.add(new HttpHeader(entry.getKey(), entry.getValue()));
                     }
-                    BasicWebRequest webRequest=new BasicWebRequest(ctx.channel().remoteAddress(), requestHeaders,hostName, webPath,queryString);
+                    BasicWebRequest webRequest=new BasicWebRequest(ctx.channel().remoteAddress(), requestHeaders,hostName, webPath,queryString,this.port,this.https);
                     try{
                         chain.doFilter(webRequest, webResponse);
                     }finally{webResponse.closeOutputStream();}
@@ -441,8 +531,8 @@ public class WebSocketServer {
        }
    }
    
-    private static SslContext sslContext;
-    public static final void setSslCertificate(File pfxFile,String pswd,String keyAlias) throws Exception{
+    private static DomainNameMappingBuilder<SslContext> domainNameMappingBuilder;
+    public static final void addSslCertificate(String domainName,File pfxFile,String pswd,String keyAlias) throws Exception{
         KeyStore keyStore=Crypto.loadKeyStore(pfxFile, "PKCS12", pswd);
         KeyStore.PrivateKeyEntry keyEntry=Crypto.getEntry(keyStore, keyAlias, pswd);
         Certificate[] certificates=keyEntry.getCertificateChain();   
@@ -450,7 +540,17 @@ public class WebSocketServer {
         for(int ctr=0;ctr<certificates.length;ctr++)
             x509Certificates[ctr]=(X509Certificate)certificates[ctr];
         SslContextBuilder sslContextBuilder=SslContextBuilder.forServer(keyEntry.getPrivateKey(), x509Certificates);
-        sslContext=sslContextBuilder.build();
+        SslContext sslContext=sslContextBuilder.build();
+        if(domainNameMappingBuilder==null){
+            domainNameMappingBuilder=new DomainNameMappingBuilder(sslContext);
+        }
+        else{
+            domainNameMappingBuilder.add(domainName, sslContext);
+        }
+    }
+    
+    public static final void addSslCertificate(File pfxFile,String pswd,String keyAlias) throws Exception{
+        addSslCertificate(null, pfxFile, pswd, keyAlias);
     }
     
     private static void main2(String[] args) throws Exception{
@@ -467,7 +567,7 @@ public class WebSocketServer {
         if(1==1)
             return;
         try{
-            WebSocketServer.setSslCertificate(new File("c:/temp/server.pfx"), "test123", null);
+            WebSocketServer.addSslCertificate(new File("c:/temp/server.pfx"), "test123", null);
             WebSocketServer.start(80, 443, null);
             java.net.URL url=new java.net.URL("http://localhost");
             HttpURLConnection httpConn = (HttpURLConnection)url.openConnection();

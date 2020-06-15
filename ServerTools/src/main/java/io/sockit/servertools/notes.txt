@@ -7,6 +7,9 @@ how to add a resource folder to a maven project
 http://www.gabrielgambetta.com/fpm1.html
 http://gamasutra.com/blogs/TramelMorrison/20140307/212607/Android_Realtime_Multiplayer__Latency_and_Anxiety.php
 
+
+add multiple domains to webserver
+
 timeout connection in client
 comment out debug log
 

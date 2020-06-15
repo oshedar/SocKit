@@ -95,40 +95,55 @@ public class Server{
     
     /**
      * Registers a WebHandler for processing a web request matching the specified urlPattern 
+     * @param domainName - domain name for which this web handler will be invoked. If value is "*" then it will be invoked for any domain if a matching handler is not available for the domain
      * @param urlPattern - the url pattern for which this web handler will be invoked
      * @param webHandler - the WebHandler that will be invoked when a request matching the url pattern is received by the Server
      */
-    public static void addWebHandler(String urlPattern, WebHandler webHandler){
-        WebSocketServer.addWebHandler(urlPattern, webHandler);
+    public static void addWebHandler(String domainName,String urlPattern, WebHandler webHandler){
+        WebSocketServer.addWebHandler(domainName,urlPattern, webHandler);
     }
     
     /**
      * Deregisters a WebHandler on the server
+     * @param domainName - the domain name for which this web handler will be removed. 
      * @param urlPattern - the url pattern for which this web handler will be removed
      * @return WebHandler - the webHandler that was deRegistered or null if none was registered for the specified urlPattern
      */
-    public static WebHandler removeHandler(String urlPattern){
-        return WebSocketServer.removeWebHandler(urlPattern);
+    public static WebHandler removeHandler(String domainName,String urlPattern){
+        return WebSocketServer.removeWebHandler(domainName,urlPattern);
     }
 
     /**
      * Registers a WebFilter with the server
+     * @param domainName - the domain name for which this web filter will be added. If value is "*" then it will be used for all domains
      * @param urlPattern - the url pattern for which this web filter will be invoked
      * @param webFilter - the WebFilter that will be invoked when a request matching the url pattern is received by the Server
      */
-    public static void addWebFilter(String urlPattern, WebFilter webFilter){
-        WebSocketServer.addWebFilter(urlPattern, webFilter);
+    public static void addWebFilter(String domainName,String urlPattern, WebFilter webFilter){
+        WebSocketServer.addWebFilter(domainName,urlPattern, webFilter);
     }
     
     /**
-     * Sets the SSL certificate to use by the https service.
+     * Adds the SSL certificate to use by the https service.
      * @param pfxFile - the keystore (PKCS#12 format) file where the private key and the public key certificate is stored
      * @param pswd - the keystore password
      * @param keyAlias - the key alias. pass null if there is no key alias
      * @throws Exception - 
      */
-    public final static void setSslCertificate(File pfxFile,String pswd,String keyAlias) throws Exception{
-        WebSocketServer.setSslCertificate(pfxFile, pswd, keyAlias);
+    public final static void addSslCertificate(File pfxFile,String pswd,String keyAlias) throws Exception{
+        WebSocketServer.addSslCertificate(pfxFile, pswd, keyAlias);
+    }
+    
+    /**
+     * Adds the SSL certificate to use by the https service.
+     * @param domainName - the domain name for which this certificate will be used
+     * @param pfxFile - the keystore (PKCS#12 format) file where the private key and the public key certificate is stored
+     * @param pswd - the keystore password
+     * @param keyAlias - the key alias. pass null if there is no key alias
+     * @throws Exception - 
+     */
+    public final static void addSslCertificate(String domainName,File pfxFile,String pswd,String keyAlias) throws Exception{
+        WebSocketServer.addSslCertificate(domainName,pfxFile, pswd, keyAlias);
     }
     
     volatile static AtomicBoolean shutDownStarted=new AtomicBoolean(false);
