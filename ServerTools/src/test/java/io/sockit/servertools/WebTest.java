@@ -48,7 +48,7 @@ public class WebTest {
          File webRootFolder=new File(WebTest.class.getResource("/web").toURI());
          assertTrue(webRootFolder.isDirectory());        
          WebSocketServer.addWebHandler("*",".*",new BasicWebHandler(webRootFolder));
-         WebSocketServer.startAsHttp(8080, null);
+         WebSocketServer.startAsHttp(8080,-1,false,null);
          try{
              HttpClientResponse response=HttpClient.doGet("http://localhost:8080/test.txt", null);
              assertTrue(response.body.equals("test"));
@@ -58,7 +58,7 @@ public class WebTest {
      }
      
      //Before running this test edit hosts file and add entry to point sockit.io to 127.0.0.1 and funwithcode.in to 127.0.0.1
-     @Test
+//     @Test
      public void testSslWeb() throws URISyntaxException,IOException, Exception{
          File webRootFolder=new File(WebTest.class.getResource("/web").toURI());
          assertTrue(webRootFolder.isDirectory());        
@@ -66,7 +66,7 @@ public class WebTest {
          WebSocketServer.addWebHandler("funwithcode.in",".*",new BasicWebHandler(webRootFolder));
          WebSocketServer.addSslCertificate("sockit.io",new File("/home/hoshi/sites/sockit/keys/sockit.pfx"), "test@123",null);
          WebSocketServer.addSslCertificate("funwithcode.in",new File("/home/hoshi/sites/funwithcode/key.pfx"), "fun@123",null);
-         WebSocketServer.startAsHttps(8080, null,false);
+         WebSocketServer.startAsHttps(8080, -1,null,false);
          try{
              HttpClientResponse response;
              response=HttpClient.doGet("https://sockit.io:8080/test.txt", null);

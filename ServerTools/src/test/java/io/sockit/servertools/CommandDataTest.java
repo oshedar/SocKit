@@ -23,7 +23,7 @@ public class CommandDataTest {
     
     @BeforeAll
     public static void setUpClass() throws IOException {
-        WebSocketServer.startAsHttp(8080, new ServerConnectionListener());
+        WebSocketServer.startAsHttp(8080, -1,false,new ServerConnectionListener());
     }
     
     @AfterAll

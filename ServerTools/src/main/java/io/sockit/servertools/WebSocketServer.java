@@ -72,6 +72,9 @@ public class WebSocketServer {
     private static SocketConnectionListener connectionListener;
     private static int httpPort;
     private static int httpsPort;
+    private static int extPort;
+    private static boolean isExtHttps;
+    
     private static Channel listeningChannel;
     
     private static class UrlHandler implements Comparable<UrlHandler>{
@@ -110,28 +113,32 @@ public class WebSocketServer {
     
     private static final Map<String,Collection<FilterHandler>> filtersMap=new ConcurrentSkipListMap(String.CASE_INSENSITIVE_ORDER);
     
-    public static void startAsHttp(int httpPort,SocketConnectionListener connectionListener) {     
-        if(httpPort<1)
-            throw new IllegalArgumentException("invalid httpPort " + httpPort);
-        start(httpPort, -1, connectionListener);
+    public static void startAsHttp(int port, int extPort, boolean isExtHttps, SocketConnectionListener connectionListener) {     
+        if(port<1)
+            throw new IllegalArgumentException("invalid port " + port);
+        if(extPort<1)
+            extPort=port;
+        start(port, -1, extPort, isExtHttps, connectionListener);
     }
     
-    public static void startAsHttps(int httpsPort, SocketConnectionListener connectionListener,boolean enableHttpRedirect) {
-        if(httpsPort<1)
-            throw new IllegalArgumentException("invalid httpsPort " + httpsPort);
+    public static void startAsHttps(int port,int extPort, SocketConnectionListener connectionListener,boolean enableHttpRedirect) {
+        if(port<1)
+            throw new IllegalArgumentException("invalid port " + port);
+        if(extPort<1)
+            extPort=port;
         int httpPort=-1;
         if(enableHttpRedirect){
-            if(httpsPort<1000){
+            if(port<1000){
                 httpPort=80;
             }
             else{
-                httpPort=(httpsPort/1000)*1000+80;
+                httpPort=(port/1000)*1000+80;
             }
         }
-        start(httpPort, httpsPort, connectionListener);
+        start(httpPort, port, extPort, true, connectionListener);
     }
     
-    private static void start(int httpPort, int httpsPort, SocketConnectionListener connectionListener) {
+    private static void start(int httpPort, int httpsPort, int extPort, boolean isExtHttps, SocketConnectionListener connectionListener) {
         if(listeningChannel!=null)
             return;
         if(!Executor.isInitialized())
@@ -139,6 +146,8 @@ public class WebSocketServer {
         final NioEventLoopGroup eventLoopGroup=new NioEventLoopGroup(Runtime.getRuntime().availableProcessors());        
         WebSocketServer.httpPort=httpPort;
         WebSocketServer.httpsPort=httpsPort;
+        WebSocketServer.extPort=extPort;
+        WebSocketServer.isExtHttps=isExtHttps;
         WebSocketServer.connectionListener=connectionListener;
         LocalCommandDataSocket.setConnectionListener(connectionListener);
         ServerBootstrap b=new ServerBootstrap();
@@ -371,7 +380,7 @@ public class WebSocketServer {
             }
             if(redirectToHttps){               
                 String redirectUri;
-                redirectUri="https://" + hostName + (httpsPort==443?"":":"+httpsPort) + request.uri();
+                redirectUri="https://" + hostName + (extPort==443?"":":"+extPort) + request.uri();
                 HttpResponse response=new DefaultFullHttpResponse(request.getProtocolVersion(),HttpResponseStatus.TEMPORARY_REDIRECT);
                 response.headers().set(HttpHeaders.Names.LOCATION,redirectUri);
                  ctx.write(response);
@@ -383,7 +392,7 @@ public class WebSocketServer {
             if (upgradeHeader!=null && upgradeHeader.equals("websocket")) {
                 ctx.fireChannelRead(request.retain());
             } else {
-                Executor.execute(new HttpRequestProcessor(ctx, request,hostName,this.port,this.https));
+                Executor.execute(new HttpRequestProcessor(ctx, request,hostName,this.port,this.https,extPort,isExtHttps));
             }
         }
        
@@ -416,14 +425,18 @@ public class WebSocketServer {
            private final FullHttpRequest request;
            private final String hostName;
            private final int port;
-           private boolean https;
+           private final boolean https;
+           private final int extPort;
+           private final boolean isExtHttps;
 
-            public HttpRequestProcessor(ChannelHandlerContext ctx, FullHttpRequest request, String hostName,int port,boolean isHttps) {
+            public HttpRequestProcessor(ChannelHandlerContext ctx, FullHttpRequest request, String hostName,int port,boolean isHttps, int extPort, boolean  isExtHttps) {
                 this.ctx = ctx;
                 this.request = request;
                 this.hostName=hostName;
                 this.port=port;
                 this.https=isHttps;
+                this.extPort=extPort;
+                this.isExtHttps=isExtHttps;
             }
 
             @Override
@@ -466,7 +479,7 @@ public class WebSocketServer {
                         for(Map.Entry<String,String> entry:reqHeaders)
                             requestHeaders.add(new HttpHeader(entry.getKey(), entry.getValue()));
                     }
-                    BasicWebRequest webRequest=new BasicWebRequest(ctx.channel().remoteAddress(), requestHeaders,hostName, webPath,queryString,this.port,this.https);
+                    BasicWebRequest webRequest=new BasicWebRequest(ctx.channel().remoteAddress(), requestHeaders,hostName, webPath,queryString,this.port,this.https,this.extPort,this.isExtHttps);
                     try{
                         chain.doFilter(webRequest, webResponse);
                     }finally{webResponse.closeOutputStream();}
@@ -568,7 +581,7 @@ public class WebSocketServer {
             return;
         try{
             WebSocketServer.addSslCertificate(new File("c:/temp/server.pfx"), "test123", null);
-            WebSocketServer.start(80, 443, null);
+            WebSocketServer.start(80, 443,-1,true, null);
             java.net.URL url=new java.net.URL("http://localhost");
             HttpURLConnection httpConn = (HttpURLConnection)url.openConnection();
             httpConn.setRequestMethod("GET");

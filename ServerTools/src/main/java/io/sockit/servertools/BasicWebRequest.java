@@ -20,8 +20,10 @@ class BasicWebRequest implements WebRequest{
     final String queryString;
     final int port;
     final boolean https;
+    final int extPort;
+    final boolean extHttps;
 
-    public BasicWebRequest(SocketAddress remoteAddress, List<HttpHeader> requestHeaders, String hostName, String resourcePath, String queryString,int port,boolean isHttps) {
+    public BasicWebRequest(SocketAddress remoteAddress, List<HttpHeader> requestHeaders, String hostName, String resourcePath, String queryString,int port,boolean isHttps, int extPort, boolean  isExtHttps) {
         this.remoteAddress = remoteAddress;
         this.requestHeaders = requestHeaders;
         this.hostName = hostName;
@@ -29,6 +31,8 @@ class BasicWebRequest implements WebRequest{
         this.queryString = queryString;
         this.port=port;
         this.https=isHttps;
+        this.extPort=extPort;
+        this.extHttps=isExtHttps;
     }
 
     @Override
@@ -54,6 +58,16 @@ class BasicWebRequest implements WebRequest{
     @Override
     public boolean isHttps() {
         return https;
+    }
+
+    @Override
+    public int getExternalHostPort() {
+        return extPort;
+    }
+
+    @Override
+    public boolean isExtHttps() {
+        return extHttps;
     }
 
     @Override
