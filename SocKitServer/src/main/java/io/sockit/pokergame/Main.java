@@ -34,35 +34,58 @@ public class Main { //implements Daemon{
         String logFile=getArgValue(args, "-logFile");
         if(logFile==null)
             logFile="../../serverLog.txt";
-        
-        String webPath=getArgValue(args, "-webPath");
-        if(webPath==null)
-            webPath="/home/hoshi/sites/sockit/GameWebClient/public_html";//webPath="../GameWebClient/public_html";
-
-        File webRootFolder=new File(webPath);
-        
-//        webRootFolder=new File(new File(Main.class.getResource("Main.class").toURI()).getParentFile(),"web");        
-        
-        System.out.println("web root folder=" + webRootFolder.getAbsolutePath());
-        System.out.println("web root exists=" + webRootFolder.exists());
-        
+                
         String webPort=getArgValue(args, "-port");
         int port=0;
         if(webPort!=null)
             port=Integer.parseInt(webPort);
         
+        String extWebPort=getArgValue(args, "-extPort");
+        int extPort=-1;
+        if(extWebPort!=null)
+            extPort=Integer.parseInt(extWebPort);
+        
+        String isExtWebHttps=getArgValue(args, "-isExtHttps");
+        boolean isExtHttps=false;
+        if(isExtWebHttps!=null)
+            isExtHttps=Boolean.parseBoolean(isExtWebHttps);
+        
+//        System.out.println("web root folder=" + webRootFolder.getAbsolutePath());
+//        System.out.println("web root exists=" + webRootFolder.exists());
+//        port=8443;
+//        addSite("*", new File("/home/hoshi/sites/sockit/GameWebClient/public_html"), "/home/hoshi/sites/sockit/keys/sockit.pfx", "test@123", null);
+//        addSite("funwithcode.in", new File("/home/hoshi/sites/funwithcode/webroot"), "/home/hoshi/sites/funwithcode/key.pfx", "fun@123", null);
+
         String pfxFile=getArgValue(args, "-pfxFile");
         String pfxPswd=getArgValue(args, "-pfxPswd");
         String domainName=getArgValue(args, "-domainName");
-        if(pfxFile==null){
-            port=8443;
-            pfxFile="/home/hoshi/sites/sockit/keys/sockit.pfx";
-            pfxPswd="test@123";
+        String webPath=getArgValue(args, "-webPath");
+        if(domainName==null)
             domainName="*";
+        File webRootFolder;
+        if(webPath!=null)
+            webRootFolder=new File(webPath);
+        else        
+            webRootFolder=new File(new File(Main.class.getResource("Main.class").toURI()).getParentFile(),"web");
+        boolean isSSl=pfxFile!=null;
+        if(!isSSl)
+            pfxPswd=null;
+        if(sites.isEmpty())
+            addSite(domainName, webRootFolder, pfxFile, pfxPswd, null);
+
+        pfxFile=getArgValue(args, "-pfxFile2");
+        pfxPswd=getArgValue(args, "-pfxPswd2");
+        domainName=getArgValue(args, "-domainName2");
+        webPath=getArgValue(args, "-webPath2");
+        if(!isSSl){
+            pfxFile=null;
+            pfxPswd=null;
         }
-        addSite(domainName, webRootFolder, pfxFile, pfxPswd, null);
-        addSite("funwithcode.in", new File("/home/hoshi/sites/funwithcode/webroot"), "/home/hoshi/sites/funwithcode/key.pfx", "fun@123", null);
-        Main.startServer(dbPath, logFile,port);
+        if(domainName!=null){
+            webRootFolder=new File(webPath);
+            addSite(domainName, webRootFolder, pfxFile, pfxPswd, null);
+        }
+        Main.startServer(dbPath, logFile,port,extPort,isExtHttps);
     }
     
     private static class SiteConfig{
@@ -87,7 +110,7 @@ public class Main { //implements Daemon{
         sites.add(new SiteConfig(domainName, webPath, pfxFile, pfxPswd, pvtKeyAlias));
     }
     
-    private static void startServer(String dbPath,String logFile,int port) throws Exception{
+    private static void startServer(String dbPath,String logFile,int port,int extPort,boolean isExtHttps) throws Exception{
         Server.registerGame(new PokerGame(20,BotTurnDelayType.fast,8));
         Server.setInitialUsersCacheSize(2000);
         Server.setDataStore(new LevelDbStore(dbPath));
@@ -104,9 +127,9 @@ public class Main { //implements Daemon{
             Server.addWebHandler(site.domainName,".*",new BasicWebHandler(site.webPath));
         }
         if(isSsl)
-            Server.startServerAsHttps(port, true);
+            Server.startServerAsHttps(port,extPort, true);
         else
-            Server.startServerAsHttp(port);
+            Server.startServerAsHttp(port,extPort,isExtHttps);
         Server.logToConsole("Server started on port: " + port);
         Server.logToConsole("Press Q + Enter to Quit");
         int charRead;

@@ -1,5 +1,9 @@
         console.log("pokergame version 1.0");
-        var pokerGame=new PokerGame("wss://" + document.location.hostname);
+        var gameUrl="wss://" + document.location.hostname;
+        var port=document.location.port;
+        if(port)
+            gameUrl=gameUrl+":" + port
+        var pokerGame=new PokerGame(gameUrl);
         var gameName="SitNGo";
         var noOfSeats=5;
         var middleSeatNo=4;

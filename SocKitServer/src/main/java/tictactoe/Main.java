@@ -17,7 +17,7 @@ public class Main {
         //Set the server's web handler
         Server.addWebHandler("*",".*",new BasicWebHandler(webRootFolder));
         //start the server without ssl on the default http port
-        Server.startServerAsHttp(0); 
+        Server.startServerAsHttp(0,-1,false); 
         Server.logToConsole("type localhost in your browser's address bar to run the web client");
     }
 }

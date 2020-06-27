@@ -570,7 +570,10 @@ public abstract class Room implements Comparable<Room>{
                 afterSeatTaken(newPlayer);
                 session.gameDataModified();
                 if(!gameInProgress && !destroyed && !cancelAutoStartGame.get() && elligiblePlayerCount()>=minNoOfPlayersForGame){
-                    delayedStartGame(100);
+                    int nonBotUserCount=nonBotPlayerCount() + spectatorCount();
+                    //if there is at least 1 non bot user in the room
+                    if(nonBotUserCount>0)
+                        delayedStartGame(100);
                 }
             }            
         }finally{instanceLock.unlock();}
@@ -918,6 +921,7 @@ public abstract class Room implements Comparable<Room>{
      */
     public final void endGamePlay(){
         boolean shouldCancelAutoStartGame=false;
+        int nonBotUserCount=0;
         instanceLock.lock();
         try{
             if(!gameInProgress || destroyed){
@@ -967,13 +971,16 @@ public abstract class Room implements Comparable<Room>{
                 if(player!=null)
                     player.resetData();
             }
-            this.resetData();            
+            this.resetData();
+            if(!shouldCancelAutoStartGame){
+                nonBotUserCount=nonBotPlayerCount() + spectatorCount();
+            }
         }finally{
             gameEnding=false;
             gameInProgress=false;
             instanceLock.unlock();
         }
-        if(!shouldCancelAutoStartGame){
+        if(!shouldCancelAutoStartGame && nonBotUserCount>0){
             delayedStartGame(delayAfterGameEndedMillis);
         }
 

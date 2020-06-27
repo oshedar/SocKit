@@ -2,19 +2,6 @@ package io.sockit.pokergame;
 
 import java.util.*;
 
-/**
- * A list {@link Card}s. 
- * <p>This implementation is a wrapper on {@link ArrayList}<{@link Card}>
- *   A Deck's iterator will provide elements
- * in FIFO order -- the order in which the elements were added -- if the
- * instance's shuffle method has not been invoked.
- * <p>It also provides a 52-card deck.
- * <p>Methods not otherwise documented forward to {@link ArrayList}<{@link Card}> or perform
- * as specified by the {@link Set} interface.
- * @version 2006Dec10.0
- * @author Steve Brecher
- *
- */
 public class Deck {
 	
 	private ArrayList<Card> cards;

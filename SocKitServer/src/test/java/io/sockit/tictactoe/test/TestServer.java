@@ -44,7 +44,7 @@ public class TestServer extends ClientEventAdapter {
         Server.setInitialUsersCacheSize(2000);
         Server.setCombineLoginWithRegisterUser(true);
         Server.addWebHandler("*",".*",new BasicWebHandler(webRootFolder));
-        Server.startServerAsHttp(0);
+        Server.startServerAsHttp(0,-1,false);
     }
     
     @AfterAll

@@ -35,28 +35,35 @@ public class Server{
     /**
      * Starts server as an http service (no SSL)
      * @param port - the port on which server will accept new client connections. If 0 is passed server will use the default http port of 80
+     * @param extPort - the port on which the proxy or loadBalancer will receive the request if there is one setup. use -1 to indicate that there is no external load balancer or proxy or that the external port is same as the server's port. Use 0 to inidicate the default http port of 80
+     * @param isExtHttps - if the external load balancer is configured for https then set this value to true
      * @throws Exception - if unable to start server for reasons such as port is not available, etc
      */
-    public final static void startServerAsHttp(int port) throws Exception{
+    public final static void startServerAsHttp(int port,int extPort,boolean isExtHttps) throws Exception{
         if(port<1)
             port=80;
-        start(port, false, false);
+        if(extPort==0)
+            extPort=80;
+        start(port, false, extPort, isExtHttps, false);
         
     }
     
     /**
      * starts server as an https service (with ssl support).
      * @param port - the port on which server will accept new client connections. If 0 is passed server will use the default https port of 443
+     * @param extPort - the port on which the proxy or loadBalancer will receive the request if there is one setup. use -1 to indicate that there is no external load balancer or proxy or that the external port is same as the server's port. Use 0 to inidicate the default https port of 443
      * @param enableHttpRedirect - indicates whether to redirect client to https if client attempts to connect on http port.
      * @throws Exception - 
      */
-    public final static void startServerAsHttps(int port,boolean enableHttpRedirect) throws Exception{
+    public final static void startServerAsHttps(int port, int extPort, boolean enableHttpRedirect) throws Exception{
         if(port<1)
             port=443;
-        start(port, true, enableHttpRedirect);
+        if(extPort==0)
+            extPort=443;
+        start(port, true, extPort, true, enableHttpRedirect);
     }
     
-    private final static void start(int port,boolean asHttps,boolean enableHttpRedirect) throws Exception{
+    private final static void start(int port,boolean asHttps,int extPort, boolean isExtHttps,boolean enableHttpRedirect) throws Exception{
         boolean gameDbOpened=false;
         try{
             WebSocketServer.initExecutor("gms", Runtime.getRuntime().availableProcessors()*2, Runtime.getRuntime().availableProcessors()*20);
@@ -66,9 +73,9 @@ public class Server{
             DataCache.init(cacheSize);
             nonSessCommandDataReadListener=new NonSessionCommandListener();
             if(asHttps)
-                WebSocketServer.startAsHttps(port, new ConnectionHandler(),enableHttpRedirect);
+                WebSocketServer.startAsHttps(port, extPort, new ConnectionHandler(),enableHttpRedirect);
             else
-                WebSocketServer.startAsHttp(port, new ConnectionHandler());
+                WebSocketServer.startAsHttp(port, extPort,isExtHttps, new ConnectionHandler());
             Runtime.getRuntime().addShutdownHook(new ShutDown());
             Games.serverStarted();
             String ports="";

@@ -51,7 +51,7 @@ public class TestServer2 extends ClientEventAdapter{
 //        new File("../temp/game_server/testdb").delete();
         Server.setCombineLoginWithRegisterUser(true);
         Server.setDataStore(new LevelDbStore("../testdb"));
-        Server.startServerAsHttp(2014);   
+        Server.startServerAsHttp(2014,-1,false);   
     }
     
     @AfterAll

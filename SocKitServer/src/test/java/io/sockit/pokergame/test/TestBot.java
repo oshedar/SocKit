@@ -5,6 +5,7 @@
  */
 package io.sockit.pokergame.test;
 
+import io.sockit.gameclient.Client;
 import io.sockit.sockitserver.Server;
 import io.sockit.sockitserver.Game;
 import io.sockit.sockitserver.JsonUtil;
@@ -20,6 +21,7 @@ import io.sockit.sockitserver.LevelDbStore;
 import io.sockit.sockitserver.bot.BotEventAdapter;
 import io.sockit.sockitserver.bot.BotTurnDelayType;
 import io.sockit.pokergame.PokerGame;
+import io.sockit.servertools.Console;
 import java.util.List;
 import javax.json.JsonObjectBuilder;
 import org.junit.jupiter.api.AfterAll;
@@ -41,12 +43,15 @@ public class TestBot extends BotEventAdapter{
     
     @BeforeAll
     public static void setUpClass() throws Exception {
-        game=new PokerGame(1, BotTurnDelayType.none, 0);
+        PokerGame pokerGame=new PokerGame(1, BotTurnDelayType.none, 0);
+        pokerGame.disableBots();
+        game=pokerGame;
         Server.registerGame(game);
         Server.setInitialUsersCacheSize(2000);
+        Server.setCombineLoginWithRegisterUser(true);
         Server.setDataStore(new LevelDbStore("../testdb"));
-        System.out.println("starting server");
-        Server.startServerAsHttp(2014);        
+        Console.log("starting server");
+        Server.startServerAsHttp(2014,-1,false);        
     }
     
     @AfterAll
@@ -57,7 +62,7 @@ public class TestBot extends BotEventAdapter{
      private static JsonObject takeSeatData;
      static{
          
-         takeSeatData=JsonUtil.createObjectBuilder().add("chipsOnTable", 40).build();
+         takeSeatData=JsonUtil.createObjectBuilder().add("chipsOnTable", 400).build();
      }
      @Test
      public void nextRound(){ 
@@ -72,18 +77,28 @@ public class TestBot extends BotEventAdapter{
          try{ Thread.sleep(50); }catch(InterruptedException ex){}
          bot1.takeSeat(bot1.getJoinedRoom().roomId,1,takeSeatData);
          try{ Thread.sleep(50); }catch(InterruptedException ex){}
+         assertTrue(bot1.isSeated());
          Bot bot2=new Bot(BotTurnDelayType.none);
          bot2.setBotEventListener(this);
          bot2.logIn("hoshi2", 1,game.gameName);         
          try{ Thread.sleep(50); }catch(InterruptedException ex){}
          bot2.takeSeat(bot1.getJoinedRoom().roomId, 2, takeSeatData);         
-         try{ Thread.sleep(10000); }catch(InterruptedException ex){}         
+         try{ Thread.sleep(50); }catch(InterruptedException ex){}
+         assertTrue(bot2.isSeated());
+         Client client1=new Client("ws://localhost:2014");
+         client1.registerWithEmailId("hoshi3@gmail.com", "123","hoshi3",game.gameName);
+         try{ Thread.sleep(150); }catch(InterruptedException ex){}
+         assertTrue(client1.isLoggedIn());
+         client1.joinRoom(bot1.getJoinedRoom().roomId);
+         try{ Thread.sleep(100); }catch(InterruptedException ex){}
+         assertTrue(client1.hasJoinedRoom());
+         try{ Thread.sleep(2000); }catch(InterruptedException ex){}         
      }
      
     private List<RoomInfo> rooms;
     @Override
     public void onError(Bot bot, int errorCode, String errorDesc) {
-        System.out.println("error from server: code=" + errorCode + "; desc=" + errorDesc);
+        Console.log("error from server: code=" + errorCode + "; desc=" + errorDesc);
     }
 
     @Override
@@ -113,27 +128,27 @@ public class TestBot extends BotEventAdapter{
     public void onTurnPlayed(Bot bot, Player turnPlayer, String playerAction, JsonObject actionData, Room room, boolean isSelf) {        
         if(bot.getName().equals("hoshi2")){
             int amtBet=JsonUtil.getAsInt(actionData, "amtBet");
-            System.out.println(turnPlayer.getName() + " " + playerAction + ", amtBet=" + amtBet);
+            Console.log(turnPlayer.getName() + " " + playerAction + ", amtBet=" + amtBet);
         }
     }
 
     @Override
     public void onGameAction(Bot bot, String gameAction, JsonObject actionData, Room room) {
         if(bot.getName().equals("hoshi2")){
-            System.out.println(gameAction + "-" + actionData);
+            Console.log(gameAction + "-" + actionData);
         }
     }
 
     @Override
     public void onGamePlayEnded(Bot bot, Room room, JsonObject endGameData) {
         if(bot.getName().equals("hoshi2")){
-            System.out.println("game over");
+            Console.log("game over");
         }
     }
 
     @Override
     public void onInvalidAction(Bot bot, String action, String description, JsonObject errorData, Room room, boolean isOutOfTurn) {
-        System.out.println("error " + errorData);
+        Console.log("error " + errorData);
     }
 
 }
