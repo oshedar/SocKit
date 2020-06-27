@@ -49,7 +49,7 @@ public class TestBot extends BotEventAdapter{
         Server.registerGame(game);
         Server.setInitialUsersCacheSize(2000);
         Server.setCombineLoginWithRegisterUser(true);
-        Server.setDataStore(new LevelDbStore("../testdb"));
+        Server.setDataStore(new LevelDbStore("../../testdb"));
         Console.log("starting server");
         Server.startServerAsHttp(2014,-1,false);        
     }
