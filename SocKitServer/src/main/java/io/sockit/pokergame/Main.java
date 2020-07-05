@@ -50,6 +50,11 @@ public class Main { //implements Daemon{
         if(isExtWebHttps!=null)
             isExtHttps=Boolean.parseBoolean(isExtWebHttps);
         
+        String hideShutdownPromptStr=getArgValue(args, "hideShutdownPrompt");
+        boolean hideShutdownPrompt=false;
+        if(hideShutdownPromptStr!=null)
+            hideShutdownPrompt=Boolean.parseBoolean(hideShutdownPromptStr);
+        
 //        System.out.println("web root folder=" + webRootFolder.getAbsolutePath());
 //        System.out.println("web root exists=" + webRootFolder.exists());
 //        port=8443;
@@ -85,7 +90,7 @@ public class Main { //implements Daemon{
             webRootFolder=new File(webPath);
             addSite(domainName, webRootFolder, pfxFile, pfxPswd, null);
         }
-        Main.startServer(dbPath, logFile,port,extPort,isExtHttps);
+        Main.startServer(dbPath, logFile,port,extPort,isExtHttps,hideShutdownPrompt);
     }
     
     private static class SiteConfig{
@@ -110,7 +115,7 @@ public class Main { //implements Daemon{
         sites.add(new SiteConfig(domainName, webPath, pfxFile, pfxPswd, pvtKeyAlias));
     }
     
-    private static void startServer(String dbPath,String logFile,int port,int extPort,boolean isExtHttps) throws Exception{
+    private static void startServer(String dbPath,String logFile,int port,int extPort,boolean isExtHttps,boolean hideShutdownPrompt) throws Exception{
         Server.registerGame(new PokerGame(20,BotTurnDelayType.fast,8));
         Server.setInitialUsersCacheSize(2000);
         Server.setDataStore(new LevelDbStore(dbPath));
@@ -133,12 +138,14 @@ public class Main { //implements Daemon{
         Server.logToConsole("Server started on port: " + port);
         Server.logToConsole("Press Q + Enter to Quit");
         int charRead;
-        while(true){
-            charRead=(char)System.in.read();
-            if(charRead=='Q' || charRead=='q')
-                break;
+        if(!hideShutdownPrompt){
+            while(true){
+                charRead=(char)System.in.read();
+                if(charRead=='Q' || charRead=='q')
+                    break;
+            }
+            Server.stopServer();
         }
-        Server.stopServer();        
     }
     
     static String getArgValue(String[] args,String argName){
