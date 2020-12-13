@@ -495,7 +495,7 @@ public class WebSocketServer {
                     if(responseHeaders!=null){
                         HttpHeaders resHeaders=response.headers();
                         for(HttpHeader header:responseHeaders)
-                            resHeaders.set(header.name, header.value);
+                            resHeaders.set(header.headerName, header.headerValue);
                     }
                     String mimeType=webResponse.getMimeType();
                     if(mimeType!=null)

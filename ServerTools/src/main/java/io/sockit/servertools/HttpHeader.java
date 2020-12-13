@@ -10,11 +10,11 @@ package io.sockit.servertools;
  * @author 
  */
 public final class HttpHeader {
-    public final String name;
-    public final String value;
+    public final String headerName;
+    public final String headerValue;
 
     public HttpHeader(String headerName, String headerValue) {
-        this.name = headerName;
-        this.value = headerValue;
+        this.headerName = headerName;
+        this.headerValue = headerValue;
     }
 }

@@ -85,8 +85,8 @@ class BasicWebRequest implements WebRequest{
         if(requestHeaders==null)
             return null;
         for(HttpHeader header:requestHeaders){
-            if(header.name.equalsIgnoreCase(headerName))
-                return header.value;
+            if(header.headerName.equalsIgnoreCase(headerName))
+                return header.headerValue;
         }
         return null;        
     }

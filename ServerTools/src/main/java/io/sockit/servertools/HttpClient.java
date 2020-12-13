@@ -18,13 +18,13 @@ import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import javax.json.JsonObject;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
@@ -41,6 +41,7 @@ public final class HttpClient {
     private static int defaultConnectTimeOutInMillis=3000;
     private static int defaultReadTimeOutInMillis=8000;
     private static Proxy proxy;
+    static final Charset utf8 = Charset.forName("UTF-8");
     
     public static void setProxy(String ip,int port){
         proxy=new Proxy(Proxy.Type.HTTP, new InetSocketAddress(ip,port));
@@ -57,46 +58,26 @@ public final class HttpClient {
     }
     
     public static HttpClientResponse doPost(URL url, String postData,List<HttpHeader> headers) throws IOException{
-        return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers);
+        return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers);
     }
     
     public static HttpClientResponse doPost(URL url, String postData,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
+        return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doPost(URL url, JsonObject postData,List<HttpHeader> headers) throws IOException{
-        return doPost(url, postData,HttpClientResponseType.string,headers);
-    }
-
-    public static HttpClientResponse doPost(URL url, JsonObject postData,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doPost(url, postData, HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
-    }
-
-    public static HttpClientResponse doPost(URL url, JsonObject postData,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
-        return doPost(url, postData, responseType, headers, false);
-    }
-    
-    public static HttpClientResponse doPost(URL url, JsonObject postData,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        if(headers==null)
-            headers=new ArrayList<HttpHeader>(2);
-        byte[] requestBody=postData.toString().getBytes(Utils.utf8Charset);
-        headers.add(new HttpHeader("Content-Type", "application/json"));
-        return doPost(url, requestBody, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers,acceptSelfSignedCertificate);
-    }
-
-    public static HttpClientResponse doPost(URL url, String postData,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doPost(URL url, String postData,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers);
     }
     
-    public static HttpClientResponse doPost(URL url, String postData,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doPost(URL url, String postData,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doPost(URL url, String postData,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doPost(URL url, String postData,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doPost(url, postData, connectTimeOutInMillis, readTimeOutInMillis, responseType, headers, false);
     }
     
-    public static HttpClientResponse doPost(URL url, String postData,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doPost(URL url, String postData,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         HttpURLConnection httpConn = (HttpURLConnection)(proxy==null?url.openConnection():url.openConnection(proxy));
         if(acceptSelfSignedCertificate && httpConn instanceof HttpsURLConnection)
             ((HttpsURLConnection)httpConn).setSSLSocketFactory(getTrustSelfSignedSocketFactory());
@@ -112,13 +93,13 @@ public final class HttpClient {
             if(headers!=null){
                 for(HttpHeader header:headers){
                     if(header!=null)
-                        httpConn.setRequestProperty(header.name, header.value);
+                        httpConn.setRequestProperty(header.headerName, header.headerValue);
                 }
             }
             if(postData!=null && postData.length()>0){
                 httpConn.setDoOutput(true);
                 os = httpConn.getOutputStream();
-                os.write(postData.getBytes(Utils.utf8Charset));
+                os.write(postData.getBytes(HttpClient.utf8));
                 os.close();
                 os=null;
             }
@@ -153,11 +134,11 @@ public final class HttpClient {
         }
     }
     
-    public static HttpClientResponse doPost(URL url, byte[] postData,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doPost(URL url, byte[] postData,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doPost(url, postData, connectTimeOutInMillis, readTimeOutInMillis, responseType, headers, false);
     }
     
-    public static HttpClientResponse doPost(URL url, byte[] postData,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doPost(URL url, byte[] postData,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         HttpURLConnection httpConn = (HttpURLConnection)(proxy==null?url.openConnection():url.openConnection(proxy));
         if(acceptSelfSignedCertificate && httpConn instanceof HttpsURLConnection)
             ((HttpsURLConnection)httpConn).setSSLSocketFactory(getTrustSelfSignedSocketFactory());
@@ -176,7 +157,7 @@ public final class HttpClient {
             if(headers!=null){
                 for(HttpHeader header:headers){
                     if(header!=null)
-                        httpConn.setRequestProperty(header.name, header.value);
+                        httpConn.setRequestProperty(header.headerName, header.headerValue);
                 }
             }
             if(postData!=null && postData.length>0){
@@ -218,42 +199,42 @@ public final class HttpClient {
     }
     
     public static HttpClientResponse doPost(URL url, byte[] postData,List<HttpHeader> headers) throws IOException{
-        return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers);
+        return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers);
     }
     
     public static HttpClientResponse doPost(URL url, byte[] postData,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
+        return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doPost(URL url, byte[] postData,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doPost(URL url, byte[] postData,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers);
     }
     
-    public static HttpClientResponse doPost(URL url, byte[] postData,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doPost(URL url, byte[] postData,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         return doPost(url, postData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers,acceptSelfSignedCertificate);
     }
     
     public static HttpClientResponse doPost(URL url,List<HttpParam> params,List<HttpHeader> headers) throws IOException{
-        return doPost(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers);
+        return doPost(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers);
     }
     
     public static HttpClientResponse doPost(URL url,List<HttpParam> params,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doPost(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
+        return doPost(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doPost(URL url,List<HttpParam> params,HttpClientResponseType responseType, List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doPost(URL url,List<HttpParam> params,ResponseType responseType, List<HttpHeader> headers) throws IOException{
         return doPost(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers);
     }
     
-    public static HttpClientResponse doPost(URL url,List<HttpParam> params,HttpClientResponseType responseType, List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doPost(URL url,List<HttpParam> params,ResponseType responseType, List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         return doPost(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doPost(URL url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType, List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doPost(URL url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType, List<HttpHeader> headers) throws IOException{
         return doPost(url, createParamString(params), connectTimeOutInMillis, readTimeOutInMillis,responseType,headers,false);
     }
     
-    public static HttpClientResponse doPost(URL url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType, List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doPost(URL url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType, List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         return doPost(url, createParamString(params), connectTimeOutInMillis, readTimeOutInMillis,responseType,headers,acceptSelfSignedCertificate);
     }
     
@@ -263,13 +244,13 @@ public final class HttpClient {
         byte[] bytes=readBytes(is);
         if(bytes==null || bytes.length<1)
             return null;
-        return new String(bytes,Utils.utf8Charset);
+        return new String(bytes,HttpClient.utf8);
     }
 
     private static byte[] readBytes(InputStream is) throws IOException{
         if(is==null)
             return null;
-        FastGrowingOutputStream os=new FastGrowingOutputStream(64);
+        FastByteArrayOutputStream os=new FastByteArrayOutputStream(64);
         byte[] bytes=new byte[64];
         int bytesRead;
         while (true){
@@ -302,34 +283,34 @@ public final class HttpClient {
     }
     
     public static HttpClientResponse doGet(URL url,List<HttpHeader> headers) throws IOException{
-        return doGet(url, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers);
+        return doGet(url, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers);
     }
     
     public static HttpClientResponse doGet(URL url,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doGet(url, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
+        return doGet(url, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doGet(URL url,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doGet(URL url,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doGet(url, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers);
     }
     
-    public static HttpClientResponse doGet(URL url,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doGet(URL url,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         return doGet(url, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers,acceptSelfSignedCertificate);
     }
     
     public static HttpClientResponse doGet(URL url,int connectTimeOutInMillis,int readTimeOutInMillis,List<HttpHeader> headers) throws IOException{
-        return doGet(url, connectTimeOutInMillis, readTimeOutInMillis, HttpClientResponseType.string,headers);
+        return doGet(url, connectTimeOutInMillis, readTimeOutInMillis, ResponseType.string,headers);
     }
     
     public static HttpClientResponse doGet(URL url,int connectTimeOutInMillis,int readTimeOutInMillis,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doGet(url, connectTimeOutInMillis, readTimeOutInMillis, HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
+        return doGet(url, connectTimeOutInMillis, readTimeOutInMillis, ResponseType.string,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doGet(URL url,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doGet(URL url,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doGet(url, connectTimeOutInMillis, readTimeOutInMillis, responseType, headers, false);
     }
     
-    public static HttpClientResponse doGet(URL url,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doGet(URL url,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         HttpURLConnection httpConn = (HttpURLConnection)(proxy==null?url.openConnection():url.openConnection(proxy));
         if(acceptSelfSignedCertificate && httpConn instanceof HttpsURLConnection)
             ((HttpsURLConnection)httpConn).setSSLSocketFactory(getTrustSelfSignedSocketFactory());
@@ -344,7 +325,7 @@ public final class HttpClient {
             if(headers!=null){
                 for(HttpHeader header:headers){
                     if(header!=null)
-                        httpConn.setRequestProperty(header.name, header.value);
+                        httpConn.setRequestProperty(header.headerName, header.headerValue);
                 }
             }
             httpConn.setRequestMethod("GET");
@@ -375,39 +356,35 @@ public final class HttpClient {
         }
     }
     
-    public static HttpClientResponse doGet(String url,List<HttpHeader> headers) throws IOException{
-        return doGet(url, null, headers);
-    }
-    
     public static HttpClientResponse doGet(String url,List<HttpParam> params,List<HttpHeader> headers) throws IOException{
-        return doGet(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers);
+        return doGet(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers);
     }
     
     public static HttpClientResponse doGet(String url,List<HttpParam> params,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doGet(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
+        return doGet(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doGet(String url,List<HttpParam> params,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doGet(String url,List<HttpParam> params,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doGet(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers);
     }
     
-    public static HttpClientResponse doGet(String url,List<HttpParam> params,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doGet(String url,List<HttpParam> params,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         return doGet(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers,acceptSelfSignedCertificate);
     }
     
     public static HttpClientResponse doGet(String url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,List<HttpHeader> headers) throws IOException{
-        return doGet(url, params, connectTimeOutInMillis, readTimeOutInMillis, HttpClientResponseType.string,headers);
+        return doGet(url, params, connectTimeOutInMillis, readTimeOutInMillis, ResponseType.string,headers);
     }
     
     public static HttpClientResponse doGet(String url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doGet(url, params, connectTimeOutInMillis, readTimeOutInMillis, HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
+        return doGet(url, params, connectTimeOutInMillis, readTimeOutInMillis, ResponseType.string,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doGet(String url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doGet(String url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doGet(url, params, connectTimeOutInMillis, readTimeOutInMillis, responseType, headers, false);
     }
     
-    public static HttpClientResponse doGet(String url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doGet(String url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         String queryString=createParamString(params);
         URL urlObj;
         if(queryString!=null){
@@ -436,7 +413,7 @@ public final class HttpClient {
     
     private static String LINE_FEED="\r\n";
     private static String charset="UTF-8";
-    public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         HttpURLConnection httpConn = (HttpURLConnection)(proxy==null?url.openConnection():url.openConnection(proxy));
         if(acceptSelfSignedCertificate && httpConn instanceof HttpsURLConnection)
             ((HttpsURLConnection)httpConn).setSSLSocketFactory(getTrustSelfSignedSocketFactory());
@@ -454,7 +431,7 @@ public final class HttpClient {
             if(headers!=null){
                 for(HttpHeader header:headers){
                     if(header!=null)
-                        httpConn.setRequestProperty(header.name, header.value);
+                        httpConn.setRequestProperty(header.headerName, header.headerValue);
                 }
             }
             httpConn.setRequestProperty("Content-Type",
@@ -507,23 +484,23 @@ public final class HttpClient {
         }
     }
     
-    public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,int connectTimeOutInMillis,int readTimeOutInMillis,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,int connectTimeOutInMillis,int readTimeOutInMillis,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doMultiPartForm(url, params, fieldName, fileName, fileData, connectTimeOutInMillis, readTimeOutInMillis, responseType, headers, false);
     }
     
     public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,List<HttpHeader> headers) throws IOException{
-        return doMultiPartForm(url, params, fieldName, fileName, fileData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers);
+        return doMultiPartForm(url, params, fieldName, fileName, fileData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers);
     }
     
     public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
-        return doMultiPartForm(url, params, fieldName, fileName, fileData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,HttpClientResponseType.string,headers,acceptSelfSignedCertificate);
+        return doMultiPartForm(url, params, fieldName, fileName, fileData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,ResponseType.string,headers,acceptSelfSignedCertificate);
     }
     
-    public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,HttpClientResponseType responseType,List<HttpHeader> headers) throws IOException{
+    public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,ResponseType responseType,List<HttpHeader> headers) throws IOException{
         return doMultiPartForm(url, params, fieldName, fileName, fileData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers);
     }
     
-    public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,HttpClientResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+    public static HttpClientResponse doMultiPartForm(URL url, List<HttpParam> params,String fieldName,String fileName,InputStream fileData,ResponseType responseType,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
         return doMultiPartForm(url, params, fieldName, fileName, fileData, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,responseType,headers,acceptSelfSignedCertificate);
     }
     
@@ -644,12 +621,12 @@ public final class HttpClient {
         
     private static HttpCookie createCookie(String cookieHeader){
         String cookieName,cookieValue,cookieExpires=null;
-        String[] cookieAttributes=Utils.split(cookieHeader, ';');
-        String[] nameValue=Utils.split(cookieAttributes[0], '=');
+        String[] cookieAttributes=split(cookieHeader, ';');
+        String[] nameValue=split(cookieAttributes[0], '=');
         cookieName=nameValue[0].trim();
         cookieValue=nameValue[1];
         if(cookieAttributes.length>1){
-            nameValue=Utils.split(cookieAttributes[1], '=');
+            nameValue=split(cookieAttributes[1], '=');
             if(nameValue[0].trim().equalsIgnoreCase("expires")){
                 cookieExpires=nameValue[1];
                 cookieExpires=cookieExpires.substring(5);
@@ -659,7 +636,9 @@ public final class HttpClient {
         try{
             expiresDate=cookieExpires==null?null:cookieExpiresDateFormat.get().parse(cookieExpires);
         }catch(Exception ex){
-            Utils.log(ex);
+            if(ex instanceof RuntimeException)
+                throw (RuntimeException) ex;
+            throw new RuntimeException(ex);
         }
         return new HttpCookie(cookieName,cookieValue,expiresDate);
     }
@@ -674,4 +653,110 @@ public final class HttpClient {
         return new HttpHeader(COOKIE_REQUEST_HEADER, sb.substring(0, sb.length()-2));
     }
     
+    public static HttpClientResponse doHead(URL url,List<HttpHeader> headers) throws IOException{
+        return doHead(url, headers, false);
+    }
+    
+    public static HttpClientResponse doHead(URL url,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+        return doHead(url, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,headers,acceptSelfSignedCertificate);
+    }
+    
+    public static HttpClientResponse doHead(URL url,int connectTimeOutInMillis,int readTimeOutInMillis,List<HttpHeader> headers) throws IOException{
+        return doHead(url, connectTimeOutInMillis, readTimeOutInMillis, headers,false);
+    }
+    
+    public static HttpClientResponse doHead(URL url,int connectTimeOutInMillis,int readTimeOutInMillis,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+        HttpURLConnection httpConn = (HttpURLConnection)(proxy==null?url.openConnection():url.openConnection(proxy));
+        if(acceptSelfSignedCertificate && httpConn instanceof HttpsURLConnection)
+            ((HttpsURLConnection)httpConn).setSSLSocketFactory(getTrustSelfSignedSocketFactory());
+        InputStream is=null;
+        try {
+            httpConn.setConnectTimeout(connectTimeOutInMillis);
+            httpConn.setReadTimeout(readTimeOutInMillis);
+            httpConn.setInstanceFollowRedirects(false);
+            httpConn.setDoOutput(false);
+            httpConn.setDoInput(true);
+            httpConn.setUseCaches(false);
+            if(headers!=null){
+                for(HttpHeader header:headers){
+                    if(header!=null)
+                        httpConn.setRequestProperty(header.headerName, header.headerValue);
+                }
+            }
+            httpConn.setRequestMethod("HEAD");
+            int responseCode = httpConn.getResponseCode();
+            if (responseCode >= 400){
+                is = httpConn.getErrorStream();
+                return new HttpClientResponse(responseCode, read(is),httpConn.getHeaderFields());
+            }
+            return new HttpClientResponse(responseCode,(String)null,httpConn.getHeaderFields());
+        }
+        finally{
+            if(is!=null)
+                try{is.close();} catch(Exception ex){}
+
+        }
+    }
+    
+    public static HttpClientResponse doHead(String url,List<HttpParam> params,List<HttpHeader> headers) throws IOException{
+        return doHead(url, params, headers, false);
+    }
+    
+    public static HttpClientResponse doHead(String url,List<HttpParam> params,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+        return doHead(url, params, defaultConnectTimeOutInMillis, defaultReadTimeOutInMillis,headers,acceptSelfSignedCertificate);
+    }
+    
+    public static HttpClientResponse doHead(String url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,List<HttpHeader> headers) throws IOException{
+        return doHead(url, params, connectTimeOutInMillis, readTimeOutInMillis, headers,false);
+    }
+    
+    public static HttpClientResponse doHead(String url,List<HttpParam> params,int connectTimeOutInMillis,int readTimeOutInMillis,List<HttpHeader> headers,boolean acceptSelfSignedCertificate) throws IOException{
+        String queryString=createParamString(params);
+        URL urlObj;
+        if(queryString!=null){
+            if(url.indexOf('?')>=0)
+                urlObj=new URL(url+'&'+queryString);
+            else
+                urlObj=new URL(url+'?'+queryString);
+        }
+        else
+            urlObj=new URL(url);
+        return doHead(urlObj, connectTimeOutInMillis, readTimeOutInMillis,headers,acceptSelfSignedCertificate);
+    }
+    
+    private static String[] split(String str, char delim) {
+        return split(str, delim, false);
+    }
+    
+    private static String[] split(String str, char delim,boolean trimValues) {
+        FastGrowingIntList delimIndexes = new FastGrowingIntList(5);
+        int index = 0;
+        int fromIndex = 0;
+        int delimSize = 1;
+        while (true) {
+            index = str.indexOf(delim, fromIndex);
+            if (index < 0) {
+                break;
+            }
+            delimIndexes.add(index);
+            fromIndex = index + delimSize;
+        }
+        int delimCount = delimIndexes.size();
+        String[] values = new String[delimCount + 1];
+        int toIndex;
+        int ctr = 0;
+        fromIndex = 0;
+        for (; ctr < delimCount; ctr++) {
+            toIndex = delimIndexes.get(ctr);
+            values[ctr] = str.substring(fromIndex, toIndex);
+            fromIndex = toIndex + delimSize;
+        }
+        values[ctr] = str.substring(fromIndex);
+        if(!trimValues)
+            return values;
+        for(int ctr2=0;ctr2<values.length;ctr2++)
+            values[ctr2]=values[ctr2].trim();
+        return values;
+    }
+
 }

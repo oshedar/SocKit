@@ -9,7 +9,7 @@ package io.sockit.servertools;
  *
  * @author 
  */
-public enum HttpClientResponseType {
+public enum ResponseType {
     string,
     byteArray,
     inputStream
