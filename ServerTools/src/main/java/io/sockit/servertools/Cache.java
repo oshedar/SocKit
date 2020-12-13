@@ -282,7 +282,7 @@ public class Cache<K,V> implements Iterable<V>{
         }
     }
     
-    private Object getSecondaryKeyValueFromObject(String[] secondaryKeys,Object object){
+    private Object getSecondaryKeyValueFromObject(String[] secondaryKeys,V object){
         try{
             if(secondaryKeys.length<2)
                 return fieldGetter.getValue(object, secondaryKeys[0]);
