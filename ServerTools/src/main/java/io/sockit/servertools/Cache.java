@@ -20,7 +20,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Hoshedar Irani
  */
 public class Cache<K,V> implements Iterable<V>{
-    static final int NCPU = Runtime.getRuntime().availableProcessors();
     private Map<K, Entry<K,V>> map;
     private Entry<K,V> header=new Entry(null,null);
     private int capacity;
