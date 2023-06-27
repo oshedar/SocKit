@@ -42,17 +42,22 @@ public class TestServer2 extends ClientEventAdapter{
     static Game game;
     
     @BeforeAll
-    public static void setUpClass() throws Exception {
-        PokerGame pokerGame=new PokerGame(1,BotTurnDelayType.none,0);//new PokerGame(5,true);
+  public static void setUpClass() throws Exception {
+      PokerGame pokerGame = new PokerGame(1, BotTurnDelayType.none, 0);//new PokerGame(5,true);
+      Server.unregisterGame(pokerGame.gameName);
         pokerGame.disableBots();
         game=pokerGame;
         Server.registerGame(game);
         Server.setInitialUsersCacheSize(2000);
 //        new File("../temp/game_server/testdb").delete();
         Server.setCombineLoginWithRegisterUser(true);
-        Server.setDataStore(new LevelDbStore("../../testdb"));
+      Server.setDataStore(new LevelDbStore("../../testdb2"));
         Server.startServerAsHttp(2014,-1,false);   
+    try {
+      Thread.sleep(60);
+    } catch (InterruptedException ex) {
     }
+  }
     
     @AfterAll
     public static void tearDownClass() {

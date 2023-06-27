@@ -44,15 +44,20 @@ public class TestBot extends BotEventAdapter{
     @BeforeAll
     public static void setUpClass() throws Exception {
         PokerGame pokerGame=new PokerGame(1, BotTurnDelayType.none, 0);
+      Server.unregisterGame(pokerGame.gameName);
         pokerGame.disableBots();
         game=pokerGame;
         Server.registerGame(game);
         Server.setInitialUsersCacheSize(2000);
         Server.setCombineLoginWithRegisterUser(true);
-        Server.setDataStore(new LevelDbStore("../../testdb"));
+      Server.setDataStore(new LevelDbStore("../../testdb1"));
         Console.log("starting server");
         Server.startServerAsHttp(2014,-1,false);        
+    try {
+      Thread.sleep(60);
+    } catch (InterruptedException ex) {
     }
+  }
     
     @AfterAll
     public static void tearDownClass() {
@@ -72,7 +77,10 @@ public class TestBot extends BotEventAdapter{
          try{ Thread.sleep(60); }catch(InterruptedException ex){}
          Server.logToConsole("getting rooms");
          bot1.getRooms("mumbai",io.sockit.sockitserver.bot.RoomType.normal);
-         try{ Thread.sleep(60); }catch(InterruptedException ex){}
+       try {
+         Thread.sleep(100);
+       } catch (InterruptedException ex) {
+       }
          bot1.joinRoom(rooms.get(0).roomId);
          try{ Thread.sleep(50); }catch(InterruptedException ex){}
          bot1.takeSeat(bot1.getJoinedRoom().roomId,1,takeSeatData);

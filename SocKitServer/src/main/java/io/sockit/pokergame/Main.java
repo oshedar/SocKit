@@ -72,8 +72,7 @@ public class Main { //implements Daemon{
             webRootFolder=new File(webPath);
         else        
             webRootFolder=new File(new File(Main.class.getResource("Main.class").toURI()).getParentFile(),"web");
-        boolean isSSl=pfxFile!=null;
-        if(!isSSl)
+        if(pfxFile==null)
             pfxPswd=null;
         if(sites.isEmpty())
             addSite(domainName, webRootFolder, pfxFile, pfxPswd, null);
@@ -82,10 +81,18 @@ public class Main { //implements Daemon{
         pfxPswd=getArgValue(args, "-pfxPswd2");
         domainName=getArgValue(args, "-domainName2");
         webPath=getArgValue(args, "-webPath2");
-        if(!isSSl){
-            pfxFile=null;
+        if(pfxFile==null)
             pfxPswd=null;
+        if(domainName!=null){
+            webRootFolder=new File(webPath);
+            addSite(domainName, webRootFolder, pfxFile, pfxPswd, null);
         }
+        pfxFile=getArgValue(args, "-pfxFile3");
+        pfxPswd=getArgValue(args, "-pfxPswd3");
+        domainName=getArgValue(args, "-domainName3");
+        webPath=getArgValue(args, "-webPath3");
+        if(pfxFile==null)
+            pfxPswd=null;
         if(domainName!=null){
             webRootFolder=new File(webPath);
             addSite(domainName, webRootFolder, pfxFile, pfxPswd, null);

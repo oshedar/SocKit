@@ -369,7 +369,15 @@ public class WebSocketServer {
 
         @Override
         public void channelRead0(ChannelHandlerContext ctx,FullHttpRequest request) throws Exception {           
-            String host=request.headers().get("Host");
+          String host = request.headers().get("Host");
+          if (host == null) {
+            HttpResponse response = new DefaultFullHttpResponse(request.getProtocolVersion(), HttpResponseStatus.BAD_REQUEST);
+            ctx.write(response);
+            ChannelFuture future = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            future.addListener(ChannelFutureListener.CLOSE);
+            return;
+          }
+
             String hostName;
             int index=host.indexOf(':');
             if(index<0){
@@ -387,7 +395,8 @@ public class WebSocketServer {
                  ChannelFuture future = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
                  future.addListener(ChannelFutureListener.CLOSE);
                  return;
-            }
+          }
+
             String upgradeHeader=request.headers().get("Upgrade");
             if (upgradeHeader!=null && upgradeHeader.equals("websocket")) {
                 ctx.fireChannelRead(request.retain());

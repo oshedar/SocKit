@@ -53,5 +53,18 @@ class Games {
         if(gameName==null)
             return null;
         return games.get(gameName);
-    }        
+  }
+
+  static final void unregisterGame(String gameName) {
+    staticLock.lock();
+    try {
+      GameObj gameObj = games.remove(gameName);
+      if (gameObj != null) {
+        gameIdMap.remove(gameObj.id);
+      }
+    } finally {
+      staticLock.unlock();
+    }
+
+  }
 }

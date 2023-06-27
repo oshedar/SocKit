@@ -15,6 +15,8 @@ import io.sockit.gameclient.Player;
 import io.sockit.gameclient.Room;
 import io.sockit.gameclient.RoomType;
 import io.sockit.gameclient.RoomInfo;
+import io.sockit.servertools.Utils;
+import io.sockit.sockitserver.Game;
 import java.io.File;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
@@ -35,26 +37,38 @@ public class TestServer extends ClientEventAdapter {
     public TestServer() {
     }
     
-    @BeforeAll
-    public static void setUpClass() throws Exception {
-        File webRootFolder=new File(new File(Main.class.getResource("Main.class").toURI()).getParentFile(),"web");        
-        //Set Database
-        Server.setDataStore(new LevelDbStore("../gameDB"));
-        Server.registerGame(new TicTacToeGame());
-        Server.setInitialUsersCacheSize(2000);
-        Server.setCombineLoginWithRegisterUser(true);
-        Server.addWebHandler("*",".*",new BasicWebHandler(webRootFolder));
-        Server.startServerAsHttp(0,-1,false);
+  @BeforeAll
+  public static void setUpClass() throws Exception {
+    Utils.log("in setup");
+//    File webRootFolder = new File(new File(Main.class.getResource("Main.class").toURI()).getParentFile(), "web");
+    //Set Database
+    Utils.log("setting datastrore");
+    Server.setDataStore(new LevelDbStore("../../testdb3"));
+    Utils.log("registering game");
+    Game game = new TicTacToeGame();
+    Server.unregisterGame(game.gameName);
+    Server.registerGame(game);
+    Utils.log("setting cache size");
+    Server.setInitialUsersCacheSize(2000);
+    Server.setCombineLoginWithRegisterUser(true);
+    Utils.log("adding web handler");
+//    Server.addWebHandler("*", ".*", new BasicWebHandler(webRootFolder));
+    Utils.log("starting server2");
+    Server.startServerAsHttp(0, -1, false);
+    try {
+      Thread.sleep(60);
+    } catch (InterruptedException ex) {
     }
+  }
     
     @AfterAll
     public static void tearDownClass() {
-        Server.stopServer();
+      Server.stopServer();
     }
 
     @Test
-    public void testGamePlayStart(){
-        Client client = new Client("ws://localhost");
+  public void testGamePlayStart() {
+      Client client = new Client("ws://localhost");
         client.setClientEventListener(this);
         client.registerWithEmailId("a@a.com", "123", "Rohan", "TicTacToe");
         

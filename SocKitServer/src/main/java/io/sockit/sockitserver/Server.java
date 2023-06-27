@@ -268,17 +268,26 @@ public class Server{
         Utils.log(ex);
     }
     
-    /**
-     * Registers a new Game on the Game engine
-     * @param game - the game to be registered
-     * @throws DuplicateGameNameHashException - 
-     */
-    public static final void registerGame(Game game) throws DuplicateGameNameHashException{
-        Games.registerNewGame(game);
-    }
+  /**
+   * Registers a new Game on the Game engine
+   *
+   * @param game - the game to be registered
+   * @throws DuplicateGameNameHashException -
+   */
+  public static final void registerGame(Game game) throws DuplicateGameNameHashException {
+    Games.registerNewGame(game);
+  }
 
-    /**
-     * Executes a task asynchronously on the server after the specified delay - if delay is 0 task will be executed immediately
+  /**
+   * Unregisters a Game from the Game engine
+   *
+   * @param gameName - the name of the game to be unregistered
+   */
+  public static final void unregisterGame(String gameName) {
+    Games.unregisterGame(gameName);
+  }
+
+  /**     * Executes a task asynchronously on the server after the specified delay - if delay is 0 task will be executed immediately
      * @param task - the Runnable task to be executed
      * @param delayInMillisSec - the delay in milli seconds
      */
